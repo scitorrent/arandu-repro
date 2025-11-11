@@ -1,0 +1,83 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: arandu
+      POSTGRES_PASSWORD: arandu
+      POSTGRES_DB: arandu
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U arandu"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  api:
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    volumes:
+      - ../backend:/app
+      - artifacts:/var/arandu/artifacts
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL: postgresql://arandu:arandu@db:5432/arandu
+      REDIS_URL: redis://redis:6379/0
+      ARTIFACTS_BASE_PATH: /var/arandu/artifacts
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  worker:
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+    command: python -m app.worker
+    volumes:
+      - ../backend:/app
+      - artifacts:/var/arandu/artifacts
+      - /var/run/docker.sock:/var/run/docker.sock
+      - temp_repos:/tmp/arandu/repos
+    environment:
+      DATABASE_URL: postgresql://arandu:arandu@db:5432/arandu
+      REDIS_URL: redis://redis:6379/0
+      ARTIFACTS_BASE_PATH: /var/arandu/artifacts
+      TEMP_REPOS_PATH: /tmp/arandu/repos
+      DOCKER_SOCKET: unix:///var/run/docker.sock
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      api:
+        condition: service_healthy
+
+volumes:
+  postgres_data:
+  artifacts:
+  temp_repos:
+
