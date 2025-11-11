@@ -1,0 +1,18 @@
+We have:
+- An MVP scope for Arandu Repro v0.
+- An architecture and module design from the Architect Agent.
+
+Your task now:
+1. Propose the first implementation steps for Sprint 0 and Sprint 1:
+   - Which files and modules to create,
+   - Minimal code scaffolding (FastAPI app, DB models, job queue, etc.),
+   - Basic Docker / docker-compose setup.
+2. Then, start implementing the most fundamental pieces:
+   - Healthcheck endpoint,
+   - Job model + migration,
+   - `POST /jobs` endpoint that stores a job in the DB.
+
+First, explain the plan.
+
+Only then, when explicitly asked, start writing code in small, reviewable chunks.
+

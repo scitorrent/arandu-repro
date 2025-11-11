@@ -1,0 +1,20 @@
+You have the high-level Arandu Repro v0 plan from the Engineering Planner.
+
+Task:
+1. Propose a concrete v0 architecture for a single-repo implementation:
+   - Components and how they communicate (API, worker, env builder, executor, storage).
+   - Exact tech choices (framework, DB, queue/worker, Docker strategy, minimal frontend).
+2. Define the initial data model (entities + key fields).
+3. Define the core Python modules and their responsibilities.
+4. Write interface contracts for:
+   - job creation,
+   - repo cloning,
+   - environment detection/build,
+   - command execution,
+   - report/notebook generation,
+   - status querying.
+
+Keep it focused on what we need to implement in the first 4–6 weeks.
+
+Do not write full implementations, just interfaces and structure.
+

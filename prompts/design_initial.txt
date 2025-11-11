@@ -1,0 +1,35 @@
+Design a v0 design system and basic UI for **Arandu Repro v0**, based on your system instructions.
+
+Deliverables:
+
+1. Brand & Mood
+   - Short description of the feeling a user should have when visiting Arandu Repro.
+   - 3–5 adjectives that define the tone.
+
+2. Color System
+   - Small set of core colors with names and hex values:
+     - background, surface, border, primary text, secondary text,
+     - primary moss green, secondary green, secondary blue, success, warning.
+   - Provide as CSS variables.
+
+3. Typography & Spacing
+   - Suggest font families (with fallbacks).
+   - Define a simple type scale (H1, H2, H3, body, small).
+   - Define a spacing scale.
+
+4. Core Components
+   - Buttons (primary, secondary, subtle).
+   - Cards (for jobs, reports).
+   - Status badges (pending, running, success, partial, failed).
+   - Navigation bar.
+   - Simple table/list for jobs.
+
+5. Key Screens (wireframes in text)
+   - Home / Landing
+   - Jobs overview
+   - Job detail (status, logs, report link, notebook link, badge snippet)
+
+Keep it pragmatic and implementable in a small Next.js or server-rendered frontend.
+
+Do not generate the full app code; focus on design tokens, component definitions, and layout descriptions.
+
