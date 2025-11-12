@@ -1,11 +1,12 @@
 """Artifact model."""
 
 import uuid
-from datetime import datetime
+from datetime import UTC, datetime
 from enum import Enum
 
-from sqlalchemy import Column, DateTime, ForeignKey, Integer, String
+from sqlalchemy import Column, DateTime
 from sqlalchemy import Enum as SQLEnum
+from sqlalchemy import ForeignKey, Integer, String
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 
@@ -31,7 +32,7 @@ class Artifact(Base):
     format = Column(String, nullable=False)  # markdown, html, ipynb, svg, etc.
     content_path = Column(String, nullable=False)
     content_size = Column(Integer, nullable=True)
-    created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
+    created_at = Column(DateTime, nullable=False, default=lambda: datetime.now(UTC))
 
     # Relationships
     job = relationship("Job", back_populates="artifacts")
