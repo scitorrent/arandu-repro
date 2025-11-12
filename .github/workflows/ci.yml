@@ -48,7 +48,7 @@ jobs:
       - name: Install dependencies
         working-directory: ./backend
         run: |
-          uv pip install -e ".[dev]"
+          uv pip install --system -e ".[dev]"
       
       - name: Lint with ruff
         working-directory: ./backend
