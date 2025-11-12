@@ -1,7 +1,7 @@
 """Worker main entry point."""
 
 import logging
-from datetime import datetime
+from datetime import UTC, datetime
 from uuid import UUID
 
 from redis import Redis
@@ -40,7 +40,7 @@ def process_job(job_id: str):
 
         # Update status to running
         job.status = JobStatus.RUNNING
-        job.updated_at = datetime.utcnow()
+        job.updated_at = datetime.now(UTC)
         db.commit()
 
         # TODO: In Sprint 1, implement actual job processing:
@@ -53,7 +53,7 @@ def process_job(job_id: str):
         # For now, just simulate completion
         logger.info(f"Job {job_id} processing completed (placeholder)")
         job.status = JobStatus.COMPLETED
-        job.updated_at = datetime.utcnow()
+        job.updated_at = datetime.now(UTC)
         db.commit()
 
     except Exception as e:
@@ -61,7 +61,7 @@ def process_job(job_id: str):
         if job:
             job.status = JobStatus.FAILED
             job.error_message = str(e)
-            job.updated_at = datetime.utcnow()
+            job.updated_at = datetime.now(UTC)
             db.commit()
     finally:
         db.close()
