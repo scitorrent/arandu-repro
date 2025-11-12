@@ -1,7 +1,7 @@
 """Run / Execution model."""
 
 import uuid
-from datetime import datetime
+from datetime import UTC, datetime
 
 from sqlalchemy import Column, DateTime, Float, ForeignKey, Integer, String, Text
 from sqlalchemy.dialects.postgresql import UUID
@@ -21,7 +21,7 @@ class Run(Base):
     stdout = Column(Text, nullable=True)  # Truncated preview
     stderr = Column(Text, nullable=True)  # Truncated preview
     logs_path = Column(String, nullable=True)  # Path to full logs file
-    started_at = Column(DateTime, nullable=False, default=datetime.utcnow)
+    started_at = Column(DateTime, nullable=False, default=lambda: datetime.now(UTC))
     completed_at = Column(DateTime, nullable=True)
     duration_seconds = Column(Float, nullable=True)
 
