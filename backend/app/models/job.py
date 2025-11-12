@@ -1,11 +1,12 @@
 """Job model."""
 
 import uuid
-from datetime import datetime
+from datetime import UTC, datetime
 from enum import Enum
 
-from sqlalchemy import JSON, Column, DateTime, String, Text
+from sqlalchemy import JSON, Column, DateTime
 from sqlalchemy import Enum as SQLEnum
+from sqlalchemy import String, Text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 
@@ -33,8 +34,13 @@ class Job(Base):
     status = Column(SQLEnum(JobStatus), nullable=False, default=JobStatus.PENDING)
     error_message = Column(Text, nullable=True)
     detected_environment = Column(JSON, nullable=True)
-    created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
-    updated_at = Column(DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, nullable=False, default=lambda: datetime.now(UTC))
+    updated_at = Column(
+        DateTime,
+        nullable=False,
+        default=lambda: datetime.now(UTC),
+        onupdate=lambda: datetime.now(UTC),
+    )
 
     # Relationships
     run = relationship("Run", back_populates="job", uselist=False)  # One-to-one in v0
