@@ -5,7 +5,7 @@ from __future__ import annotations
 from datetime import datetime
 from uuid import UUID
 
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, Field, field_validator
 
 from app.models.job import JobStatus
 
@@ -29,7 +29,7 @@ class JobCreate(BaseModel):
 class JobResponse(BaseModel):
     """Schema for job response."""
 
-    job_id: UUID
+    job_id: UUID = Field(alias="id")
     repo_url: str
     arxiv_id: str | None
     run_command: str | None
@@ -41,6 +41,7 @@ class JobResponse(BaseModel):
 
     class Config:
         from_attributes = True
+        populate_by_name = True
 
 
 class JobStatusResponse(BaseModel):
