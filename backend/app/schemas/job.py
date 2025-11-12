@@ -5,7 +5,7 @@ from __future__ import annotations
 from datetime import datetime
 from uuid import UUID
 
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from app.models.job import JobStatus
 
@@ -29,7 +29,9 @@ class JobCreate(BaseModel):
 class JobResponse(BaseModel):
     """Schema for job response."""
 
-    job_id: UUID
+    model_config = ConfigDict(from_attributes=True, populate_by_name=True)
+
+    job_id: UUID = Field(validation_alias="id")
     repo_url: str
     arxiv_id: str | None
     run_command: str | None
@@ -39,19 +41,15 @@ class JobResponse(BaseModel):
     updated_at: datetime
     artifacts: list[ArtifactResponse] | None = None
 
-    class Config:
-        from_attributes = True
-
 
 class JobStatusResponse(BaseModel):
     """Schema for lightweight job status response."""
 
-    job_id: UUID
+    model_config = ConfigDict(from_attributes=True, populate_by_name=True)
+
+    job_id: UUID = Field(validation_alias="id")
     status: JobStatus
     updated_at: datetime
-
-    class Config:
-        from_attributes = True
 
 
 # Import after class definition to resolve forward reference

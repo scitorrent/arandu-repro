@@ -45,17 +45,7 @@ async def create_job(
             detail="Failed to enqueue job",
         )
 
-    return JobResponse(
-        job_id=job.id,
-        repo_url=job.repo_url,
-        arxiv_id=job.arxiv_id,
-        run_command=job.run_command,
-        status=job.status,
-        error_message=job.error_message,
-        created_at=job.created_at,
-        updated_at=job.updated_at,
-        artifacts=None,
-    )
+    return JobResponse.model_validate(job)
 
 
 @router.get("/jobs/{job_id}", response_model=JobResponse)
@@ -85,17 +75,11 @@ async def get_job(
             for artifact in job.artifacts
         ]
 
-    return JobResponse(
-        job_id=job.id,
-        repo_url=job.repo_url,
-        arxiv_id=job.arxiv_id,
-        run_command=job.run_command,
-        status=job.status,
-        error_message=job.error_message,
-        created_at=job.created_at,
-        updated_at=job.updated_at,
-        artifacts=artifacts,
-    )
+    # Use model_validate and override artifacts if needed
+    response = JobResponse.model_validate(job)
+    if artifacts is not None:
+        response.artifacts = artifacts
+    return response
 
 
 @router.get("/jobs/{job_id}/status", response_model=JobStatusResponse)
@@ -111,8 +95,4 @@ async def get_job_status(
             detail="Job not found",
         )
 
-    return JobStatusResponse(
-        job_id=job.id,
-        status=job.status,
-        updated_at=job.updated_at,
-    )
+    return JobStatusResponse.model_validate(job)
