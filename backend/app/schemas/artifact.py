@@ -1,6 +1,5 @@
 """Artifact schemas for API validation."""
 
-
 from pydantic import BaseModel
 
 from app.models.artifact import ArtifactType
