@@ -47,7 +47,7 @@ target-version = "py311"
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "N", "W", "UP"]
-ignore = ["E501", "E402", "F821"]  # E402: TYPE_CHECKING, F821: forward references
+ignore = ["E501", "E402", "F821", "I001"]  # E402: TYPE_CHECKING, F821: forward references, I001: import sorting (handled by isort)
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
