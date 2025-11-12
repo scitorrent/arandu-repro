@@ -42,7 +42,7 @@ async def create_job(
         db.commit()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to enqueue job",
+            detail=f"Failed to enqueue job (job_id={job.id}, repo_url={job.repo_url})",
         )
 
     return JobResponse.model_validate(job)
