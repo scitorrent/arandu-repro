@@ -8,8 +8,14 @@ from app.utils.errors import ExecutionError
 from app.worker.executor import execute_command
 
 
-def test_executor_fails_if_root_user():
+def test_executor_fails_if_root_user(tmp_path):
     """Test that executor fails if docker_user is root."""
+    repo_path = tmp_path / "test-repo"
+    repo_path.mkdir()
+    artifacts_dir = tmp_path / "artifacts"
+    artifacts_dir.mkdir(parents=True)
+    (artifacts_dir / "logs").mkdir(exist_ok=True)
+
     with patch("app.worker.executor.settings") as mock_settings:
         mock_settings.docker_user = "root"
         mock_settings.docker_cpu_limit = 2.0
@@ -24,14 +30,20 @@ def test_executor_fails_if_root_user():
             execute_command(
                 image_tag="test:latest",
                 command="echo test",
-                repo_path=Mock(),
-                artifacts_dir=Mock(),
+                repo_path=repo_path,
+                artifacts_dir=artifacts_dir,
                 job_id="test-job",
             )
 
 
-def test_executor_fails_if_no_cpu_limit():
+def test_executor_fails_if_no_cpu_limit(tmp_path):
     """Test that executor fails if CPU limit is not set."""
+    repo_path = tmp_path / "test-repo"
+    repo_path.mkdir()
+    artifacts_dir = tmp_path / "artifacts"
+    artifacts_dir.mkdir(parents=True)
+    (artifacts_dir / "logs").mkdir(exist_ok=True)
+
     with patch("app.worker.executor.settings") as mock_settings:
         mock_settings.docker_user = "arandu-user"
         mock_settings.docker_cpu_limit = 0
@@ -46,16 +58,19 @@ def test_executor_fails_if_no_cpu_limit():
             execute_command(
                 image_tag="test:latest",
                 command="echo test",
-                repo_path=Mock(),
-                artifacts_dir=Mock(),
+                repo_path=repo_path,
+                artifacts_dir=artifacts_dir,
                 job_id="test-job",
             )
 
 
-def test_executor_fails_if_no_memory_limit():
+def test_executor_fails_if_no_memory_limit(tmp_path):
     """Test that executor fails if memory limit is not set."""
-    repo_path = Path("/tmp/test-repo")
-    artifacts_dir = Path("/tmp/test-artifacts")
+    repo_path = tmp_path / "test-repo"
+    repo_path.mkdir()
+    artifacts_dir = tmp_path / "artifacts"
+    artifacts_dir.mkdir(parents=True)
+    (artifacts_dir / "logs").mkdir(exist_ok=True)
 
     with patch("app.worker.executor.settings") as mock_settings:
         mock_settings.docker_user = "arandu-user"
@@ -75,10 +90,13 @@ def test_executor_fails_if_no_memory_limit():
             )
 
 
-def test_executor_fails_if_invalid_network_mode():
+def test_executor_fails_if_invalid_network_mode(tmp_path):
     """Test that executor fails if network mode is invalid."""
-    repo_path = Path("/tmp/test-repo")
-    artifacts_dir = Path("/tmp/test-artifacts")
+    repo_path = tmp_path / "test-repo"
+    repo_path.mkdir()
+    artifacts_dir = tmp_path / "artifacts"
+    artifacts_dir.mkdir(parents=True)
+    (artifacts_dir / "logs").mkdir(exist_ok=True)
 
     with patch("app.worker.executor.settings") as mock_settings:
         mock_settings.docker_user = "arandu-user"
@@ -98,11 +116,17 @@ def test_executor_fails_if_invalid_network_mode():
             )
 
 
-def test_executor_enforces_readonly_rootfs():
+def test_executor_enforces_readonly_rootfs(tmp_path):
     """Test that executor applies read-only root filesystem when enabled."""
+    repo_path = tmp_path / "test-repo"
+    repo_path.mkdir()
+    artifacts_dir = tmp_path / "artifacts"
+    artifacts_dir.mkdir(parents=True)
+    (artifacts_dir / "logs").mkdir(exist_ok=True)
+
     with patch("app.worker.executor.docker") as mock_docker, patch(
         "app.worker.executor.settings"
-    ) as mock_settings, patch("app.worker.executor.Path"):
+    ) as mock_settings:
 
         mock_settings.docker_user = "arandu-user"
         mock_settings.docker_cpu_limit = 2.0
@@ -117,13 +141,6 @@ def test_executor_enforces_readonly_rootfs():
         mock_container.wait.return_value = {"StatusCode": 0}
         mock_container.logs.return_value = b"test output"
         mock_client.containers.run.return_value = mock_container
-
-        repo_path = Mock()
-        repo_path.__str__ = lambda x: "/tmp/repo"
-        artifacts_dir = Mock()
-        artifacts_dir.__str__ = lambda x: "/tmp/artifacts"
-        artifacts_dir.mkdir = Mock()
-        artifacts_dir.__truediv__ = Mock(return_value=Mock(parent=Mock(mkdir=Mock())))
 
         execute_command(
             image_tag="test:latest",
