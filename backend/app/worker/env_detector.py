@@ -40,10 +40,10 @@ class Dependency:
         if not self.version:
             return self.name
 
-        # Check longer operators first to avoid false matches
-        # Order matters: check "==", ">=", "<=", "!=", "~=" before ">", "<"
+        # Check if version already contains any operator (not just at start)
+        # This handles edge cases like "1>=2.0" where operator is in the middle
         version_operators = ("==", ">=", "<=", "!=", "~=", ">", "<")
-        if any(self.version.startswith(op) for op in version_operators):
+        if any(op in self.version for op in version_operators):
             return f"{self.name}{self.version}"
         else:
             return f"{self.name}=={self.version}"

@@ -116,7 +116,7 @@ def process_job(job_id: str):
             stdout=execution_result.stdout,
             stderr=execution_result.stderr,
             logs_path=str(execution_result.logs_path) if execution_result.logs_path else None,
-            started_at=datetime.now(UTC),  # TODO: Get actual start time from execution
+            started_at=execution_result.started_at,  # Use actual start time from execution
             completed_at=datetime.now(UTC),
             duration_seconds=execution_result.duration_seconds,
         )

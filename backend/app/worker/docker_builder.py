@@ -140,13 +140,16 @@ def _generate_dockerfile(env_info: EnvironmentInfo) -> str:
             lines.append("# Install Poetry dependencies")
             lines.append("RUN pip install poetry")
             lines.append("COPY pyproject.toml .")
-            lines.append("COPY poetry.lock* .")  # Include lock file for reproducible builds
+            if "poetry.lock" in env_info.detected_files:
+                lines.append("COPY poetry.lock .")  # Include lock file for reproducible builds
             lines.append("RUN poetry install --no-dev")
             lines.append("")
         elif "Pipfile" in env_info.detected_files:
             lines.append("# Install Pipenv dependencies")
             lines.append("RUN pip install pipenv")
-            lines.append("COPY Pipfile Pipfile.lock* ./")
+            lines.append("COPY Pipfile ./")
+            if "Pipfile.lock" in env_info.detected_files:
+                lines.append("COPY Pipfile.lock ./")
             lines.append("RUN pipenv install --deploy")
             lines.append("")
 

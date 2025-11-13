@@ -63,6 +63,7 @@ def execute_command(
 
     with log_step(job_id, "execute_command", command=command, timeout=timeout_seconds):
         start_time = time.time()
+        started_at = datetime.now(UTC)  # Capture actual start time
 
         # Ensure artifacts directory exists
         artifacts_dir.mkdir(parents=True, exist_ok=True)
@@ -119,17 +120,13 @@ def execute_command(
                 if isinstance(wait_result, dict):
                     exit_code = wait_result.get("StatusCode", 1)
                 else:
-                    # Fallback for unexpected return type (should not happen per Docker SDK)
-                    logger.warning(
-                        f"Unexpected wait_result type: {type(wait_result)}, value: {wait_result}"
+                    # According to Docker SDK, this should never happen, but log error if it does
+                    logger.error(
+                        f"Unexpected wait_result type from container.wait(): {type(wait_result)}, value: {wait_result}"
                     )
-                    try:
-                        exit_code = int(wait_result) if wait_result else 1
-                    except (ValueError, TypeError):
-                        logger.warning(
-                            "Could not convert wait_result to int, defaulting exit_code to 1"
-                        )
-                        exit_code = 1
+                    raise ExecutionError(
+                        f"container.wait() returned unexpected type: {type(wait_result)}"
+                    )
             except Exception as e:
                 # Container may have timed out or crashed
                 logger.warning(f"Container wait failed: {e}")
@@ -177,6 +174,7 @@ def execute_command(
                 stdout=stdout_truncated,
                 stderr=stderr_truncated,
                 duration_seconds=duration_seconds,
+                started_at=started_at,
                 logs_path=logs_file,
             )
 
