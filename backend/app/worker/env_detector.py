@@ -240,7 +240,7 @@ def _parse_environment_yml(environment_path: Path) -> list[Dependency]:
                     if "=" in dep:
                         name, version = dep.split("=", 1)
                         dependencies.append(
-                            Dependency(name=name.strip(), version=f"={version.strip()}")
+                            Dependency(name=name.strip(), version=f"=={version.strip()}")
                         )
                     else:
                         dependencies.append(Dependency(name=dep.strip()))
