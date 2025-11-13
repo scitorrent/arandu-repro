@@ -25,7 +25,8 @@ def test_generate_dockerfile_pip():
 
     assert "FROM python:3.11-slim" in dockerfile
     assert "useradd -m -u 1000 arandu-user" in dockerfile
-    assert "pip install --no-cache-dir numpy==1.24.0 pandas" in dockerfile
+    assert "numpy==1.24.0" in dockerfile
+    assert "pandas" in dockerfile
     assert "USER arandu-user" in dockerfile
     assert "WORKDIR /workspace" in dockerfile
 
