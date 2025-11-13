@@ -116,7 +116,11 @@ def execute_command(
             try:
                 wait_result = container.wait(timeout=timeout_seconds)
                 # container.wait() returns a dict with 'StatusCode' key
-                exit_code = wait_result.get("StatusCode", 1) if isinstance(wait_result, dict) else wait_result
+                exit_code = (
+                    wait_result.get("StatusCode", 1)
+                    if isinstance(wait_result, dict)
+                    else wait_result
+                )
             except Exception as e:
                 # Container may have timed out or crashed
                 logger.warning(f"Container wait failed: {e}")
