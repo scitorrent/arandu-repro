@@ -134,6 +134,7 @@ def test_executor_enforces_readonly_rootfs(tmp_path):
         mock_settings.docker_network_mode = "none"
         mock_settings.docker_readonly_rootfs = True
         mock_settings.default_timeout_seconds = 60
+        mock_settings.max_log_size_bytes = 1_000_000  # Real value to avoid MagicMock issues
 
         mock_client = Mock()
         mock_docker.from_env.return_value = mock_client
