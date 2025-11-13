@@ -126,7 +126,7 @@ def test_executor_enforces_readonly_rootfs(tmp_path):
 
     with patch("app.worker.executor.docker") as mock_docker, patch(
         "app.worker.executor.settings"
-    ) as mock_settings:
+    ) as mock_settings, patch("app.worker.executor.time") as mock_time:
 
         mock_settings.docker_user = "arandu-user"
         mock_settings.docker_cpu_limit = 2.0
@@ -134,6 +134,9 @@ def test_executor_enforces_readonly_rootfs(tmp_path):
         mock_settings.docker_network_mode = "none"
         mock_settings.docker_readonly_rootfs = True
         mock_settings.default_timeout_seconds = 60
+
+        # Mock time.time() for duration calculation
+        mock_time.time.side_effect = [1000.0, 1001.0]  # 1 second duration
 
         mock_client = Mock()
         mock_docker.from_env.return_value = mock_client
