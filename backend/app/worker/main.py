@@ -258,7 +258,7 @@ def _handle_job_failure(db: Session, job: Job | None, error_message: str, job_id
 
     try:
         # Capture previous status before updating
-        previous_status = job.status.value
+        previous_status = job.status.value if job.status is not None else "unknown"
         with log_step(job_id, "status_transition", from_status=previous_status, to_status="failed"):
             job.status = JobStatus.FAILED
             job.error_message = error_message

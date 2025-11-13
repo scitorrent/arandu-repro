@@ -31,8 +31,8 @@ class Dependency:
         Format dependency for pip install command.
 
         Returns dependency string with proper version operator.
-        Checks for existing operators (==, >=, <=, !=, ~=, >, <) and avoids
-        double operators. Longer operators are checked first to avoid false matches.
+        Checks if version already starts with a version operator to avoid
+        adding a duplicate '==' operator.
 
         Returns:
             Formatted dependency string (e.g., "numpy==1.24.0" or "torch>=2.0.0")
@@ -40,10 +40,11 @@ class Dependency:
         if not self.version:
             return self.name
 
-        # Check if version already contains any operator (not just at start)
-        # This handles edge cases like "1>=2.0" where operator is in the middle
+        # Check if version already starts with a version operator
+        # This avoids adding a duplicate '==' if the version string already includes
+        # an operator prefix (e.g., '>=2.0.0')
         version_operators = ("==", ">=", "<=", "!=", "~=", ">", "<")
-        if any(op in self.version for op in version_operators):
+        if self.version.startswith(version_operators):
             return f"{self.name}{self.version}"
         else:
             return f"{self.name}=={self.version}"
@@ -175,34 +176,50 @@ def _parse_requirements_txt(requirements_path: Path) -> list[Dependency]:
                 continue
 
             spec = parts[0]
-            # Parse all valid pip version specifiers
-            # Check longer operators first to avoid false matches
-            if "==" in spec:
-                name, version = spec.split("==", 1)
-                dependencies.append(Dependency(name=name.strip(), version=f"=={version.strip()}"))
-            elif ">=" in spec:
-                name, version = spec.split(">=", 1)
-                dependencies.append(Dependency(name=name.strip(), version=f">={version.strip()}"))
-            elif "<=" in spec:
-                name, version = spec.split("<=", 1)
-                dependencies.append(Dependency(name=name.strip(), version=f"<={version.strip()}"))
-            elif "!=" in spec:
-                name, version = spec.split("!=", 1)
-                dependencies.append(Dependency(name=name.strip(), version=f"!={version.strip()}"))
-            elif "~=" in spec:
-                name, version = spec.split("~=", 1)
-                dependencies.append(Dependency(name=name.strip(), version=f"~={version.strip()}"))
-            elif ">" in spec and ">=" not in spec:  # Check > only if >= not present
-                name, version = spec.split(">", 1)
-                dependencies.append(Dependency(name=name.strip(), version=f">{version.strip()}"))
-            elif "<" in spec and "<=" not in spec:  # Check < only if <= not present
-                name, version = spec.split("<", 1)
-                dependencies.append(Dependency(name=name.strip(), version=f"<{version.strip()}"))
-            else:
-                # No version specified
-                dependencies.append(Dependency(name=spec.strip()))
+            dependencies.append(_parse_pip_dependency_string(spec))
 
     return dependencies
+
+
+def _parse_pip_dependency_string(spec: str) -> Dependency:
+    """
+    Parse a pip dependency string (e.g., "numpy==1.24.0", "torch>=2.0.0").
+
+    Supports all valid pip version specifiers: ==, >=, <=, !=, ~=, >, <
+
+    Args:
+        spec: Dependency specification string
+
+    Returns:
+        Dependency object with name and version (including operator)
+    """
+    spec = spec.strip()
+    # Parse all valid pip version specifiers
+    # Check longer operators first to avoid false matches
+    if "==" in spec:
+        name, version = spec.split("==", 1)
+        return Dependency(name=name.strip(), version=f"=={version.strip()}")
+    elif ">=" in spec:
+        name, version = spec.split(">=", 1)
+        return Dependency(name=name.strip(), version=f">={version.strip()}")
+    elif "<=" in spec:
+        name, version = spec.split("<=", 1)
+        return Dependency(name=name.strip(), version=f"<={version.strip()}")
+    elif "!=" in spec:
+        name, version = spec.split("!=", 1)
+        return Dependency(name=name.strip(), version=f"!={version.strip()}")
+    elif "~=" in spec:
+        name, version = spec.split("~=", 1)
+        return Dependency(name=name.strip(), version=f"~={version.strip()}")
+    elif ">" in spec and ">=" not in spec:  # Check > only if >= not present
+        name, version = spec.split(">", 1)
+        return Dependency(name=name.strip(), version=f">{version.strip()}")
+    elif "<" in spec and "<=" not in spec:  # Check < only if <= not present
+        name, version = spec.split("<", 1)
+        return Dependency(name=name.strip(), version=f"<{version.strip()}")
+    else:
+        # No version specified
+        return Dependency(name=spec.strip())
 
 
 def _parse_environment_yml(environment_path: Path) -> list[Dependency]:
@@ -219,9 +236,12 @@ def _parse_environment_yml(environment_path: Path) -> list[Dependency]:
             for dep in deps:
                 if isinstance(dep, str):
                     # Format: "package=1.0.0" or "package"
+                    # Conda uses '=' for version specification, preserve it
                     if "=" in dep:
                         name, version = dep.split("=", 1)
-                        dependencies.append(Dependency(name=name.strip(), version=version.strip()))
+                        dependencies.append(
+                            Dependency(name=name.strip(), version=f"={version.strip()}")
+                        )
                     else:
                         dependencies.append(Dependency(name=dep.strip()))
                 elif isinstance(dep, dict):
@@ -231,13 +251,8 @@ def _parse_environment_yml(environment_path: Path) -> list[Dependency]:
                         if isinstance(pip_deps, list):
                             for pip_dep in pip_deps:
                                 if isinstance(pip_dep, str):
-                                    if "==" in pip_dep:
-                                        name, version = pip_dep.split("==", 1)
-                                        dependencies.append(
-                                            Dependency(name=name.strip(), version=version.strip())
-                                        )
-                                    else:
-                                        dependencies.append(Dependency(name=pip_dep.strip()))
+                                    # Reuse pip dependency parsing logic
+                                    dependencies.append(_parse_pip_dependency_string(pip_dep))
 
     except Exception as e:
         logger.warning(f"Error parsing environment.yml: {e}")
@@ -274,11 +289,8 @@ def _parse_pyproject_toml(pyproject_path: Path) -> list[Dependency]:
             deps = data["project"]["dependencies"]
             for dep in deps:
                 if isinstance(dep, str):
-                    if "==" in dep:
-                        name, version = dep.split("==", 1)
-                        dependencies.append(Dependency(name=name.strip(), version=version.strip()))
-                    else:
-                        dependencies.append(Dependency(name=dep.strip()))
+                    # Reuse pip dependency parsing logic to support all operators
+                    dependencies.append(_parse_pip_dependency_string(dep))
 
     except ImportError:
         logger.warning("tomli not available, cannot parse pyproject.toml")

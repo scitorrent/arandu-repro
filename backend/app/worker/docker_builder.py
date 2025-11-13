@@ -123,10 +123,11 @@ def _generate_dockerfile(env_info: EnvironmentInfo) -> str:
         lines.append("# Note: Converting conda deps to pip for v0")
         deps = []
         for dep in env_info.dependencies:
-            if dep.version and "=" in dep.version:
-                # Extract version from conda format (numpy=1.24.0)
-                version = dep.version.split("=")[-1]
-                deps.append(f"{dep.name}=={version}")
+            if dep.version:
+                # Conda dependencies may have '=' prefix (e.g., '=1.24.0')
+                # or pip-style operators (e.g., '>=2.0.0')
+                # Use format_for_pip() which handles all cases correctly
+                deps.append(dep.format_for_pip())
             else:
                 deps.append(dep.name)
 
