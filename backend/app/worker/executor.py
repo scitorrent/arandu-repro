@@ -119,16 +119,11 @@ def execute_command(
             try:
                 wait_result = container.wait(timeout=timeout_seconds)
                 # container.wait() returns a dict with 'StatusCode' key according to Docker SDK
-                if isinstance(wait_result, dict):
-                    exit_code = wait_result.get("StatusCode", 1)
-                else:
-                    # According to Docker SDK, this should never happen, but log error if it does
-                    logger.error(
-                        f"Unexpected wait_result type from container.wait(): {type(wait_result)}, value: {wait_result}"
-                    )
-                    raise ExecutionError(
-                        f"container.wait() returned unexpected type: {type(wait_result)}"
-                    )
+                # According to Docker SDK documentation, this should always be a dict
+                assert isinstance(
+                    wait_result, dict
+                ), f"container.wait() returned unexpected type: {type(wait_result)}, value: {wait_result}"
+                exit_code = wait_result.get("StatusCode", 1)
             except Exception as e:
                 # Container may have timed out or crashed
                 logger.warning(f"Container wait failed: {e}")

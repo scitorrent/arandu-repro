@@ -43,6 +43,8 @@ class Dependency:
         # Check if version already starts with a version operator
         # This avoids adding a duplicate '==' if the version string already includes
         # an operator prefix (e.g., '>=2.0.0')
+        # IMPORTANT: The ordering of version_operators matters! Longer operators must come first
+        # to ensure correct matching (e.g., '>=' before '>'). Do not reorder.
         version_operators = ("==", ">=", "<=", "!=", "~=", ">", "<")
         if self.version.startswith(version_operators):
             return f"{self.name}{self.version}"
@@ -211,12 +213,22 @@ def _parse_pip_dependency_string(spec: str) -> Dependency:
     elif "~=" in spec:
         name, version = spec.split("~=", 1)
         return Dependency(name=name.strip(), version=f"~={version.strip()}")
-    elif ">" in spec and ">=" not in spec:  # Check > only if >= not present
-        name, version = spec.split(">", 1)
-        return Dependency(name=name.strip(), version=f">{version.strip()}")
-    elif "<" in spec and "<=" not in spec:  # Check < only if <= not present
-        name, version = spec.split("<", 1)
-        return Dependency(name=name.strip(), version=f"<{version.strip()}")
+    elif ">" in spec:
+        # Check that '>' is not part of '>=' by verifying position
+        # Since '>=' was already checked above, we know it's not present
+        # But verify at the split position to be safe
+        idx = spec.find(">")
+        if idx == 0 or (idx > 0 and spec[idx - 1] != "="):
+            name, version = spec.split(">", 1)
+            return Dependency(name=name.strip(), version=f">{version.strip()}")
+    elif "<" in spec:
+        # Check that '<' is not part of '<=' by verifying position
+        # Since '<=' was already checked above, we know it's not present
+        # But verify at the split position to be safe
+        idx = spec.find("<")
+        if idx == 0 or (idx > 0 and spec[idx - 1] != "="):
+            name, version = spec.split("<", 1)
+            return Dependency(name=name.strip(), version=f"<{version.strip()}")
     else:
         # No version specified
         return Dependency(name=spec.strip())
@@ -236,7 +248,7 @@ def _parse_environment_yml(environment_path: Path) -> list[Dependency]:
             for dep in deps:
                 if isinstance(dep, str):
                     # Format: "package=1.0.0" or "package"
-                    # Conda uses '=' for version specification, preserve it
+                    # Conda uses '=' for version specification, convert to '==' for pip compatibility
                     if "=" in dep:
                         name, version = dep.split("=", 1)
                         dependencies.append(

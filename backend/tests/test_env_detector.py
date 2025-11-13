@@ -91,7 +91,7 @@ def test_parse_requirements_txt(tmp_path: Path):
 
     assert len(deps) == 4
     assert deps[0].name == "numpy"
-    assert deps[0].version == "==1.24.0"  # Version now includes operator
+    assert deps[0].version == "==1.24.0"  # The version string includes the operator (e.g., '==')
     assert deps[1].name == "torch"
     assert deps[1].version == ">=2.0.0"
     assert deps[2].name == "pandas"

@@ -46,7 +46,7 @@ def build_image(
             client = docker.from_env()
 
             # Generate Dockerfile
-            dockerfile_content = _generate_dockerfile(env_info)
+            dockerfile_content = _generate_dockerfile(env_info, repo_path)
 
             # Write Dockerfile to repo
             dockerfile_path = repo_path / "Dockerfile.arandu"
@@ -85,7 +85,7 @@ def build_image(
             raise DockerBuildError(error_msg) from e
 
 
-def _generate_dockerfile(env_info: EnvironmentInfo) -> str:
+def _generate_dockerfile(env_info: EnvironmentInfo, repo_path: Path | None = None) -> str:
     """
     Generate Dockerfile content based on environment info.
 
@@ -141,7 +141,8 @@ def _generate_dockerfile(env_info: EnvironmentInfo) -> str:
             lines.append("# Install Poetry dependencies")
             lines.append("RUN pip install poetry")
             lines.append("COPY pyproject.toml .")
-            if "poetry.lock" in env_info.detected_files:
+            # Check if poetry.lock exists in repository (not in detected_files)
+            if repo_path and (repo_path / "poetry.lock").exists():
                 lines.append("COPY poetry.lock .")  # Include lock file for reproducible builds
             lines.append("RUN poetry install --no-dev")
             lines.append("")
@@ -149,7 +150,8 @@ def _generate_dockerfile(env_info: EnvironmentInfo) -> str:
             lines.append("# Install Pipenv dependencies")
             lines.append("RUN pip install pipenv")
             lines.append("COPY Pipfile ./")
-            if "Pipfile.lock" in env_info.detected_files:
+            # Check if Pipfile.lock exists in repository (not in detected_files)
+            if repo_path and (repo_path / "Pipfile.lock").exists():
                 lines.append("COPY Pipfile.lock ./")
             lines.append("RUN pipenv install --deploy")
             lines.append("")

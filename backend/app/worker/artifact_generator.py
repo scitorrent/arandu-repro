@@ -206,11 +206,11 @@ def generate_notebook(
         # Cell 2: Environment setup
         setup_source = ["# Environment Setup\n", "\n"]
         if env_info.type == "pip":
-            setup_source.append("```bash\n")
-            setup_source.append("pip install ")
             deps = [dep.format_for_pip() for dep in env_info.dependencies]
-            setup_source.append(" ".join(deps))
-            setup_source.append("\n```\n")
+            if deps:
+                setup_source.append("```bash\n")
+                setup_source.append("pip install " + " ".join(deps) + "\n")
+                setup_source.append("```\n")
         elif env_info.type == "conda":
             setup_source.append("```bash\n")
             setup_source.append("conda env create -f environment.yml\n")
