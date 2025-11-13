@@ -142,9 +142,10 @@ def test_executor_enforces_readonly_rootfs(tmp_path):
         mock_container.logs.return_value = b"test output"
         mock_client.containers.run.return_value = mock_container
 
-        # Mock time module to avoid comparison issues
+        # Mock time module to avoid comparison issues with timeout check
+        # Pass explicit timeout_seconds to avoid using mock_settings.default_timeout_seconds (MagicMock)
         with patch("app.worker.executor.time") as mock_time:
-            mock_time.time.side_effect = [1000.0, 1001.0]  # 1 second duration
+            mock_time.time.side_effect = [1000.0, 1001.0]  # start_time, then elapsed check
 
             execute_command(
                 image_tag="test:latest",
@@ -152,6 +153,7 @@ def test_executor_enforces_readonly_rootfs(tmp_path):
                 repo_path=repo_path,
                 artifacts_dir=artifacts_dir,
                 job_id="test-job",
+                timeout_seconds=60,  # Explicit timeout to avoid MagicMock comparison
             )
 
         # Verify read_only was passed to containers.run
