@@ -84,6 +84,18 @@ def execute_command(
                 str(artifacts_dir): {"bind": "/artifacts", "mode": "rw"},  # Writable artifacts
             }
 
+            # Validate security constraints are set (BEFORE parsing/using them)
+            if not settings.docker_user or settings.docker_user == "root":
+                raise ExecutionError("Security violation: containers must run as non-root user")
+            if settings.docker_cpu_limit <= 0:
+                raise ExecutionError("Security violation: CPU limit must be greater than 0")
+            if not settings.docker_memory_limit or settings.docker_memory_limit.strip() == "":
+                raise ExecutionError("Security violation: memory limit must be set")
+            if settings.docker_network_mode not in ("none", "bridge"):
+                raise ExecutionError(
+                    f"Security violation: invalid network mode '{settings.docker_network_mode}'"
+                )
+
             # Prepare security constraints
             # CPU limit (in nano CPUs: 2.0 cores = 2000000000)
             cpu_quota = int(settings.docker_cpu_limit * 1_000_000_000)
@@ -91,18 +103,6 @@ def execute_command(
 
             # Memory limit (convert string like "4g" to bytes)
             memory_bytes = _parse_memory_limit(settings.docker_memory_limit)
-
-            # Validate security constraints are set
-            if not settings.docker_user or settings.docker_user == "root":
-                raise ExecutionError("Security violation: containers must run as non-root user")
-            if settings.docker_cpu_limit <= 0:
-                raise ExecutionError("Security violation: CPU limit must be greater than 0")
-            if not settings.docker_memory_limit:
-                raise ExecutionError("Security violation: memory limit must be set")
-            if settings.docker_network_mode not in ("none", "bridge"):
-                raise ExecutionError(
-                    f"Security violation: invalid network mode '{settings.docker_network_mode}'"
-                )
 
             # Run container with security constraints
             logger.info(
