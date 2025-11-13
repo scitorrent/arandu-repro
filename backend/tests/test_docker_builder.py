@@ -110,9 +110,8 @@ def test_build_image_failure(mock_docker_client, tmp_path: Path):
 
     # Mock Docker client to raise BuildError
     mock_client = MagicMock()
-    mock_client.images.build.side_effect = docker.errors.BuildError(
-        "Build failed", "test error", []
-    )
+    build_error = docker.errors.BuildError("Build failed", [])
+    mock_client.images.build.side_effect = build_error
     mock_docker_client.return_value = mock_client
 
     # Build image should raise DockerBuildError
