@@ -1,0 +1,3 @@
+# Minimal test repository
+numpy==1.24.0
+
