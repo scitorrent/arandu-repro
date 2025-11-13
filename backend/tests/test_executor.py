@@ -25,7 +25,7 @@ def test_truncate_log():
     long_log = "x" * 2000
     truncated = _truncate_log(long_log, 100)
     # Truncated log should be <= max_bytes + truncation indicator
-    assert len(truncated.encode("utf-8")) <= 100 + len("\n... [truncated]".encode("utf-8"))
+    assert len(truncated.encode("utf-8")) <= 100 + len(b"\n... [truncated]")
     assert "[truncated]" in truncated
 
 
