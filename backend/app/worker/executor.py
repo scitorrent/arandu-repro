@@ -123,7 +123,13 @@ def execute_command(
                     logger.warning(
                         f"Unexpected wait_result type: {type(wait_result)}, value: {wait_result}"
                     )
-                    exit_code = int(wait_result) if wait_result else 1
+                    try:
+                        exit_code = int(wait_result) if wait_result else 1
+                    except (ValueError, TypeError):
+                        logger.warning(
+                            "Could not convert wait_result to int, defaulting exit_code to 1"
+                        )
+                        exit_code = 1
             except Exception as e:
                 # Container may have timed out or crashed
                 logger.warning(f"Container wait failed: {e}")

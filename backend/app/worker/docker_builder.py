@@ -109,16 +109,7 @@ def _generate_dockerfile(env_info: EnvironmentInfo) -> str:
     # Install dependencies based on environment type
     if env_info.type == "pip":
         # Generate pip install command
-        deps = []
-        for dep in env_info.dependencies:
-            if dep.version:
-                # Version may already include ==, >=, etc.
-                if dep.version.startswith(("==", ">=", "~=", "<=", "!=", ">", "<")):
-                    deps.append(f"{dep.name}{dep.version}")
-                else:
-                    deps.append(f"{dep.name}=={dep.version}")
-            else:
-                deps.append(dep.name)
+        deps = [dep.format_for_pip() for dep in env_info.dependencies]
 
         if deps:
             lines.append("# Install Python dependencies")
@@ -149,6 +140,7 @@ def _generate_dockerfile(env_info: EnvironmentInfo) -> str:
             lines.append("# Install Poetry dependencies")
             lines.append("RUN pip install poetry")
             lines.append("COPY pyproject.toml .")
+            lines.append("COPY poetry.lock* .")  # Include lock file for reproducible builds
             lines.append("RUN poetry install --no-dev")
             lines.append("")
         elif "Pipfile" in env_info.detected_files:

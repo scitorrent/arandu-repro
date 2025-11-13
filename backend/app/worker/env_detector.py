@@ -26,6 +26,28 @@ class Dependency:
             result["version"] = self.version
         return result
 
+    def format_for_pip(self) -> str:
+        """
+        Format dependency for pip install command.
+
+        Returns dependency string with proper version operator.
+        Checks for existing operators (==, >=, <=, !=, ~=, >, <) and avoids
+        double operators. Longer operators are checked first to avoid false matches.
+
+        Returns:
+            Formatted dependency string (e.g., "numpy==1.24.0" or "torch>=2.0.0")
+        """
+        if not self.version:
+            return self.name
+
+        # Check longer operators first to avoid false matches
+        # Order matters: check "==", ">=", "<=", "!=", "~=" before ">", "<"
+        version_operators = ("==", ">=", "<=", "!=", "~=", ">", "<")
+        if any(self.version.startswith(op) for op in version_operators):
+            return f"{self.name}{self.version}"
+        else:
+            return f"{self.name}=={self.version}"
+
 
 class EnvironmentInfo:
     """Represents detected environment information."""

@@ -93,14 +93,8 @@ def generate_report(
 
         if env_info.dependencies:
             for dep in env_info.dependencies:
-                if dep.version:
-                    # Check if version already contains an operator (==, >=, ~=, etc.)
-                    if dep.version.startswith(("==", ">=", "~=", "<=", "!=", ">", "<")):
-                        report_lines.append(f"- `{dep.name}{dep.version}`")
-                    else:
-                        report_lines.append(f"- `{dep.name}=={dep.version}`")
-                else:
-                    report_lines.append(f"- `{dep.name}`")
+                formatted = dep.format_for_pip()
+                report_lines.append(f"- `{formatted}`")
         else:
             report_lines.append("- No dependencies detected")
 
@@ -214,16 +208,7 @@ def generate_notebook(
         if env_info.type == "pip":
             setup_source.append("```bash\n")
             setup_source.append("pip install ")
-            deps = []
-            for dep in env_info.dependencies:
-                if dep.version:
-                    # Check if version already contains an operator (==, >=, ~=, etc.)
-                    if dep.version.startswith(("==", ">=", "~=", "<=", "!=", ">", "<")):
-                        deps.append(f"{dep.name}{dep.version}")
-                    else:
-                        deps.append(f"{dep.name}=={dep.version}")
-                else:
-                    deps.append(dep.name)
+            deps = [dep.format_for_pip() for dep in env_info.dependencies]
             setup_source.append(" ".join(deps))
             setup_source.append("\n```\n")
         elif env_info.type == "conda":
