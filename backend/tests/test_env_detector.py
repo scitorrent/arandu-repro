@@ -25,8 +25,8 @@ def test_detect_requirements_txt(tmp_path: Path):
     assert env_info.type == "pip"
     assert "requirements.txt" in env_info.detected_files
     assert len(env_info.dependencies) == 3
-    assert any(dep.name == "numpy" and dep.version == "1.24.0" for dep in env_info.dependencies)
-    assert any(dep.name == "torch" for dep in env_info.dependencies)
+    assert any(dep.name == "numpy" and dep.version == "==1.24.0" for dep in env_info.dependencies)
+    assert any(dep.name == "torch" and dep.version == ">=2.0.0" for dep in env_info.dependencies)
     assert any(dep.name == "pandas" and dep.version is None for dep in env_info.dependencies)
 
 
@@ -91,7 +91,7 @@ def test_parse_requirements_txt(tmp_path: Path):
 
     assert len(deps) == 4
     assert deps[0].name == "numpy"
-    assert deps[0].version == "1.24.0"
+    assert deps[0].version == "==1.24.0"  # Version now includes operator
     assert deps[1].name == "torch"
     assert deps[1].version == ">=2.0.0"
     assert deps[2].name == "pandas"
