@@ -2,6 +2,7 @@
 
 import logging
 import time
+from datetime import UTC, datetime
 from pathlib import Path
 
 import docker
@@ -22,6 +23,7 @@ class ExecutionResult(BaseModel):
     stdout: str  # Truncated preview (for DB storage)
     stderr: str  # Truncated preview (for DB storage)
     duration_seconds: float
+    started_at: datetime  # Actual start time of execution
     logs_path: Path | None = None  # Path to full logs file (stdout + stderr combined)
 
 

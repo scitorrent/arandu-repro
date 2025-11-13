@@ -175,15 +175,29 @@ def _parse_requirements_txt(requirements_path: Path) -> list[Dependency]:
                 continue
 
             spec = parts[0]
+            # Parse all valid pip version specifiers
+            # Check longer operators first to avoid false matches
             if "==" in spec:
                 name, version = spec.split("==", 1)
-                dependencies.append(Dependency(name=name.strip(), version=version.strip()))
+                dependencies.append(Dependency(name=name.strip(), version=f"=={version.strip()}"))
             elif ">=" in spec:
                 name, version = spec.split(">=", 1)
                 dependencies.append(Dependency(name=name.strip(), version=f">={version.strip()}"))
+            elif "<=" in spec:
+                name, version = spec.split("<=", 1)
+                dependencies.append(Dependency(name=name.strip(), version=f"<={version.strip()}"))
+            elif "!=" in spec:
+                name, version = spec.split("!=", 1)
+                dependencies.append(Dependency(name=name.strip(), version=f"!={version.strip()}"))
             elif "~=" in spec:
                 name, version = spec.split("~=", 1)
                 dependencies.append(Dependency(name=name.strip(), version=f"~={version.strip()}"))
+            elif ">" in spec and ">=" not in spec:  # Check > only if >= not present
+                name, version = spec.split(">", 1)
+                dependencies.append(Dependency(name=name.strip(), version=f">{version.strip()}"))
+            elif "<" in spec and "<=" not in spec:  # Check < only if <= not present
+                name, version = spec.split("<", 1)
+                dependencies.append(Dependency(name=name.strip(), version=f"<{version.strip()}"))
             else:
                 # No version specified
                 dependencies.append(Dependency(name=spec.strip()))
