@@ -18,7 +18,8 @@ class Settings(BaseSettings):
     docker_socket: str = "unix:///var/run/docker.sock"
     docker_cpu_limit: float = 2.0
     docker_memory_limit: str = "4g"
-    docker_network_mode: str = "none"
+    docker_network_mode: str = "none"  # "none" (default) or "bridge" with allowlist
+    docker_readonly_rootfs: bool = True  # Read-only root filesystem when viable
 
     # Execution
     default_timeout_seconds: int = 1800  # 30 minutes
@@ -31,6 +32,9 @@ class Settings(BaseSettings):
     # Security
     docker_user: str = "arandu-user"
     docker_user_uid: int = 1000
+    docker_allowlist_domains: list[
+        str
+    ] = []  # Allowed domains for network access (empty = no network)
 
     # API
     api_base_url: str = "http://localhost:8000"
