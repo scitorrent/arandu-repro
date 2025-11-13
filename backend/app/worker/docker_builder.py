@@ -57,7 +57,7 @@ def build_image(
             logger.info(f"Building Docker image: {image_tag}")
             image, build_logs = client.images.build(
                 path=str(repo_path),
-                dockerfile=str(dockerfile_path),
+                dockerfile="Dockerfile.arandu",  # Relative path from build context
                 tag=image_tag,
                 rm=True,  # Remove intermediate containers
                 forcerm=True,  # Always remove intermediate containers

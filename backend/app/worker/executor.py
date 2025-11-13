@@ -115,12 +115,15 @@ def execute_command(
             # Wait for container with timeout
             try:
                 wait_result = container.wait(timeout=timeout_seconds)
-                # container.wait() returns a dict with 'StatusCode' key
-                exit_code = (
-                    wait_result.get("StatusCode", 1)
-                    if isinstance(wait_result, dict)
-                    else wait_result
-                )
+                # container.wait() returns a dict with 'StatusCode' key according to Docker SDK
+                if isinstance(wait_result, dict):
+                    exit_code = wait_result.get("StatusCode", 1)
+                else:
+                    # Fallback for unexpected return type (should not happen per Docker SDK)
+                    logger.warning(
+                        f"Unexpected wait_result type: {type(wait_result)}, value: {wait_result}"
+                    )
+                    exit_code = int(wait_result) if wait_result else 1
             except Exception as e:
                 # Container may have timed out or crashed
                 logger.warning(f"Container wait failed: {e}")

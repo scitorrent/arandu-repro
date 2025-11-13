@@ -257,16 +257,16 @@ def _handle_job_failure(db: Session, job: Job | None, error_message: str, job_id
         return
 
     try:
-        with log_step(
-            job_id, "status_transition", from_status=job.status.value, to_status="failed"
-        ):
+        # Capture previous status before updating
+        previous_status = job.status.value
+        with log_step(job_id, "status_transition", from_status=previous_status, to_status="failed"):
             job.status = JobStatus.FAILED
             job.error_message = error_message
             job.updated_at = datetime.now(UTC)
             db.commit()
             log_event(
                 logging.ERROR,
-                f"Job status: {job.status.value} -> failed",
+                f"Job status: {previous_status} -> failed",
                 job_id=job_id,
                 step="status_transition",
                 error=error_message,

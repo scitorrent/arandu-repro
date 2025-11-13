@@ -213,7 +213,11 @@ def generate_notebook(
             deps = []
             for dep in env_info.dependencies:
                 if dep.version:
-                    deps.append(f"{dep.name}=={dep.version}")
+                    # Check if version already contains an operator (==, >=, ~=, etc.)
+                    if dep.version.startswith(("==", ">=", "~=", "<=", "!=", ">", "<")):
+                        deps.append(f"{dep.name}{dep.version}")
+                    else:
+                        deps.append(f"{dep.name}=={dep.version}")
                 else:
                     deps.append(dep.name)
             setup_source.append(" ".join(deps))
