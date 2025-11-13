@@ -126,7 +126,7 @@ def test_executor_enforces_readonly_rootfs(tmp_path):
 
     with patch("app.worker.executor.docker") as mock_docker, patch(
         "app.worker.executor.settings"
-    ) as mock_settings, patch("app.worker.executor.time") as mock_time:
+    ) as mock_settings:
 
         mock_settings.docker_user = "arandu-user"
         mock_settings.docker_cpu_limit = 2.0
@@ -135,9 +135,6 @@ def test_executor_enforces_readonly_rootfs(tmp_path):
         mock_settings.docker_readonly_rootfs = True
         mock_settings.default_timeout_seconds = 60
 
-        # Mock time.time() for duration calculation
-        mock_time.time.side_effect = [1000.0, 1001.0]  # 1 second duration
-
         mock_client = Mock()
         mock_docker.from_env.return_value = mock_client
         mock_container = Mock()
@@ -145,13 +142,17 @@ def test_executor_enforces_readonly_rootfs(tmp_path):
         mock_container.logs.return_value = b"test output"
         mock_client.containers.run.return_value = mock_container
 
-        execute_command(
-            image_tag="test:latest",
-            command="echo test",
-            repo_path=repo_path,
-            artifacts_dir=artifacts_dir,
-            job_id="test-job",
-        )
+        # Mock time module to avoid comparison issues
+        with patch("app.worker.executor.time") as mock_time:
+            mock_time.time.side_effect = [1000.0, 1001.0]  # 1 second duration
+
+            execute_command(
+                image_tag="test:latest",
+                command="echo test",
+                repo_path=repo_path,
+                artifacts_dir=artifacts_dir,
+                job_id="test-job",
+            )
 
         # Verify read_only was passed to containers.run
         call_kwargs = mock_client.containers.run.call_args[1]
