@@ -24,7 +24,8 @@ def test_truncate_log():
 
     long_log = "x" * 2000
     truncated = _truncate_log(long_log, 100)
-    assert len(truncated.encode("utf-8")) <= 100
+    # Truncated log should be <= max_bytes + truncation indicator
+    assert len(truncated.encode("utf-8")) <= 100 + len("\n... [truncated]".encode("utf-8"))
     assert "[truncated]" in truncated
 
 
@@ -124,7 +125,7 @@ def test_execute_command_container_error(mock_docker_client, tmp_path: Path):
     # Mock Docker client to raise ContainerError
     mock_client = MagicMock()
     mock_client.containers.run.side_effect = docker.errors.ContainerError(
-        container={}, exit_status=1, command="test", image="test-image"
+        container={}, exit_status=1, command="test", image="test-image", stderr=b"error"
     )
     mock_docker_client.return_value = mock_client
 
