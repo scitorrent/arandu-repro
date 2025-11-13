@@ -112,7 +112,11 @@ def _generate_dockerfile(env_info: EnvironmentInfo) -> str:
         deps = []
         for dep in env_info.dependencies:
             if dep.version:
-                deps.append(f"{dep.name}{dep.version}")
+                # Version may already include ==, >=, etc.
+                if dep.version.startswith(("==", ">=", "~=", "<=", "!=", ">", "<")):
+                    deps.append(f"{dep.name}{dep.version}")
+                else:
+                    deps.append(f"{dep.name}=={dep.version}")
             else:
                 deps.append(dep.name)
 
