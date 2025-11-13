@@ -134,11 +134,8 @@ def _generate_dockerfile(env_info: EnvironmentInfo) -> str:
         for dep in env_info.dependencies:
             if dep.version and "=" in dep.version:
                 # Extract version from conda format (numpy=1.24.0)
-                version = dep.version.split("=")[-1] if "=" in dep.version else None
-                if version:
-                    deps.append(f"{dep.name}=={version}")
-                else:
-                    deps.append(dep.name)
+                version = dep.version.split("=")[-1]
+                deps.append(f"{dep.name}=={version}")
             else:
                 deps.append(dep.name)
 

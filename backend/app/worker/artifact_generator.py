@@ -94,7 +94,11 @@ def generate_report(
         if env_info.dependencies:
             for dep in env_info.dependencies:
                 if dep.version:
-                    report_lines.append(f"- `{dep.name}=={dep.version}`")
+                    # Check if version already contains an operator (==, >=, ~=, etc.)
+                    if dep.version.startswith(("==", ">=", "~=", "<=", "!=", ">", "<")):
+                        report_lines.append(f"- `{dep.name}{dep.version}`")
+                    else:
+                        report_lines.append(f"- `{dep.name}=={dep.version}`")
                 else:
                     report_lines.append(f"- `{dep.name}`")
         else:
