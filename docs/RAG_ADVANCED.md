@@ -72,6 +72,10 @@ Citations with scores
 ```python
 @dataclass
 class CitationCandidate:
+    """
+    Represents a candidate citation for a scientific claim, including metadata, scores from various retrieval stages,
+    and a justification for its relevance.
+    """
     title: str
     authors: list[str]
     venue: str
