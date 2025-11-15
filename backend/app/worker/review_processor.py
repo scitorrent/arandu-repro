@@ -204,11 +204,7 @@ def process_review(review_id: str) -> None:
                     shap_to_json(shap_explanations),
                     checklist_json,
                     review.claims or [],
-                    paper_meta={
-                        "title": paper_meta.title,
-                        "authors": paper_meta.authors,
-                        "venue": paper_meta.venue,
-                    },
+                    paper_meta=review.paper_meta or {},
                 )
 
                 # Store quality score
