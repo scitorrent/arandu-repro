@@ -11,6 +11,13 @@ Pipeline de agentes usando LangGraph para processar papers, extrair claims, suge
 ```python
 @dataclass
 class ReviewState:
+    """
+    Global state for the agent pipeline.
+
+    Holds all relevant information and artifacts produced during the review process,
+    including paper metadata, repository info, extracted claims, checklist, reproducibility
+    trace, quality score, generated artifacts, errors, and additional metadata.
+    """
     review_id: str  # UUID
     paper: PaperMeta
     repo: RepoMeta | None
