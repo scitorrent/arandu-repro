@@ -16,6 +16,8 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+    networks:
+      - arandu-network
 
   redis:
     image: redis:7-alpine
@@ -26,6 +28,8 @@ services:
       interval: 5s
       timeout: 3s
       retries: 5
+    networks:
+      - arandu-network
 
   api:
     build:
@@ -51,6 +55,8 @@ services:
       interval: 10s
       timeout: 5s
       retries: 3
+    networks:
+      - arandu-network
 
   worker:
     build:
