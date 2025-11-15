@@ -94,6 +94,13 @@ Fornecer uma estimativa quantitativa e **explicável** da qualidade de um paper,
 ```python
 @dataclass
 class QualityFeatures:
+    """
+    Schema for features used in the Quality Score model.
+
+    This dataclass captures methodological and reproducibility signals extracted from papers,
+    repositories, checklists, traces, and citations. Each field represents a specific feature
+    used to estimate the quality and reproducibility of a scientific paper.
+    """
     # Paper
     num_claims: int
     claims_per_section: dict[str, float]
