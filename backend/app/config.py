@@ -28,6 +28,7 @@ class Settings(BaseSettings):
     # Storage
     artifacts_base_path: Path = Path("/var/arandu/artifacts")
     temp_repos_path: Path = Path("/tmp/arandu/repos")
+    reviews_base_path: Path = Path("/var/arandu/reviews")  # Reviews-specific storage
 
     # Security
     docker_user: str = "arandu-user"
@@ -40,6 +41,14 @@ class Settings(BaseSettings):
 
     # API
     api_base_url: str = "http://localhost:8000"
+
+    # Review MVP settings
+    max_pdf_size_mb: int = 25
+    review_timeout_seconds: int = 90
+    rag_enabled: bool = True
+    arxiv_enabled: bool = True
+    crossref_enabled: bool = True
+    crossref_mailto: str = "contact@arandu.org"  # For Crossref API
 
     class Config:
         env_file = ".env"
