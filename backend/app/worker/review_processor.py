@@ -148,8 +148,36 @@ def process_review(review_id: str) -> None:
                         status="processing",
                     )
 
-            # TODO: Steps 4-7 (Checklist, Quality Score, Badges, Reports)
-            # For now, mark as completed after citations
+            # Step 4: Method checklist
+            with log_step(review_id, "checklist_generation", review_id=review_id):
+                # Get repo path if available
+                repo_path = None
+                if review.repo_url:
+                    # TODO: Clone repo if needed (reuse repo_cloner from Sprint 1)
+                    # For now, checklist will work with paper text only
+                    pass
+
+                checklist = generate_checklist(
+                    paper_meta.text,
+                    claim_objects if review.claims else [],
+                    repo_path=repo_path,
+                )
+
+                checklist_json = checklist_to_json(checklist)
+                review.checklist = checklist_json
+                db.commit()
+
+                log_event(
+                    logging.INFO,
+                    f"Generated checklist: {checklist.summary}",
+                    job_id=review_id,
+                    step="checklist_generation",
+                    event="checklist_generated",
+                    status="processing",
+                )
+
+            # TODO: Steps 5-7 (Quality Score, Badges, Reports)
+            # For now, mark as completed after checklist
             review.status = ReviewStatus.COMPLETED
             db.commit()
 
