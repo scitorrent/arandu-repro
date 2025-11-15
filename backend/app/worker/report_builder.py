@@ -413,7 +413,7 @@ def build_review_data(review: Any) -> dict[str, Any]:
         "doi": review.doi,
         "repo_url": review.repo_url,
         "status": review.status.value if hasattr(review.status, "value") else str(review.status),
-        "paper_meta": {
+        "paper_meta": review.paper_meta if hasattr(review, "paper_meta") and review.paper_meta else {
             "title": getattr(review, "paper_title", None),
             "authors": getattr(review, "paper_authors", []),
             "venue": getattr(review, "paper_venue", None),
