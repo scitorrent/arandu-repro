@@ -38,6 +38,18 @@ Sistema de métricas e KPIs para monitorar aquisição, valor, custo e qualidade
 ```python
 @dataclass
 class ReviewMetrics:
+    """
+    Stores metrics for a single review, including acquisition, value, cost, and quality indicators.
+
+    Acquisition:
+        - badge_adopted, badge_adopted_at
+    Value:
+        - num_claims, num_claims_with_accepted_cites, num_suggestions_accepted, num_suggestions_rejected, ttfr_seconds
+    Cost:
+        - cpu_hours, estimated_cost_usd, latency_seconds
+    Quality:
+        - quality_score, human_evaluation_score, nps_reviewer, nps_author
+    """
     review_id: str
     submitted_at: datetime
     completed_at: datetime | None
