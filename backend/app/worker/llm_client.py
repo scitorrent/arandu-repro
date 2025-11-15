@@ -1,6 +1,7 @@
 """LLM client for Gemini API."""
 
 import logging
+import os
 from typing import Any
 
 from app.config import settings
@@ -21,6 +22,9 @@ def get_llm_client():
     """
     Get configured Gemini LLM client.
 
+    Supports API key authentication for Gemini API.
+    For Vertex AI, use GOOGLE_APPLICATION_CREDENTIALS env var.
+
     Returns:
         Configured genai client or None if not available
     """
@@ -32,8 +36,10 @@ def get_llm_client():
         return None
 
     try:
+        # Configure with API key
         genai.configure(api_key=settings.gemini_api_key)
-        return genai.GenerativeModel(settings.gemini_model)
+        model = genai.GenerativeModel(settings.gemini_model)
+        return model
     except Exception as e:
         logger.error(f"Failed to configure Gemini client: {e}")
         return None
@@ -59,31 +65,24 @@ def generate_text(prompt: str, temperature: float = 0.3, max_tokens: int = 2000)
         return None
 
     try:
-        # Handle both standard genai and Vertex AI models
-        if hasattr(client, "generate_content"):
-            # Standard google-generativeai
-            response = client.generate_content(
-                prompt,
-                generation_config={
-                    "temperature": temperature,
-                    "max_output_tokens": max_tokens,
-                },
-            )
-            return response.text
-        else:
-            # Vertex AI (different API)
-            response = client.generate_content(
-                prompt,
-                generation_config={
-                    "temperature": temperature,
-                    "max_output_tokens": max_tokens,
-                },
-            )
-            return response.text
+        response = client.generate_content(
+            prompt,
+            generation_config={
+                "temperature": temperature,
+                "max_output_tokens": max_tokens,
+            },
+        )
+        return response.text
     except Exception as e:
         logger.error(f"LLM generation failed: {e}")
         # Log more details for debugging
-        logger.debug(f"Error type: {type(e).__name__}, Error: {str(e)[:500]}")
+        error_msg = str(e)
+        if "401" in error_msg or "CREDENTIALS" in error_msg:
+            logger.warning(
+                "Gemini API authentication failed. "
+                "For Vertex AI, set GOOGLE_APPLICATION_CREDENTIALS env var. "
+                "For API key, ensure GEMINI_API_KEY is valid."
+            )
         return None
 
 
@@ -121,4 +120,3 @@ def generate_structured_output(prompt: str, output_format: str = "json") -> dict
         logger.error(f"Failed to parse LLM JSON output: {e}")
         logger.debug(f"LLM output: {text}")
         return None
-
