@@ -26,6 +26,7 @@ dependencies = [
     "shap>=0.43.0",  # SHAP explanations
     "langgraph>=0.0.40",  # LangGraph for agent orchestration (optional)
     "typing-extensions>=4.8.0",  # For TypedDict compatibility
+    "google-generativeai>=0.3.0",  # Google Gemini API
 ]
 
 [project.optional-dependencies]
