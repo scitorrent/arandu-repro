@@ -55,6 +55,12 @@ class Settings(BaseSettings):
     rag_top_k: int = 5  # Number of citations to return per claim
     rag_min_score: float = 0.3  # Minimum score threshold
 
+    # LLM / Gemini AI settings
+    gcp_project_id: str = "tough-valve-465919"
+    gemini_api_key: str = ""  # Set via GEMINI_API_KEY env var
+    gemini_model: str = "gemini-2.5-flash-lite"
+    llm_enabled: bool = True  # Enable LLM features (narrative generation, etc.)
+
     class Config:
         env_file = ".env"
         case_sensitive = False
