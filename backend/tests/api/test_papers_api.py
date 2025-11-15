@@ -35,14 +35,10 @@ def db_session(db_engine):
 
 
 @pytest.fixture
-def client(db_session):
+def client(db_session, monkeypatch):
     """Create test client with database session."""
-    def get_db_override():
-        yield db_session
-    
-    app.dependency_overrides = {}
-    # Note: We'll need to override get_db if we use dependency injection
-    # For now, the routes use SessionLocal directly
+    # Mock SessionLocal to return our test session
+    monkeypatch.setattr("app.api.routes.papers.SessionLocal", lambda: db_session)
     
     return TestClient(app)
 
@@ -55,37 +51,59 @@ def sample_pdf():
     return io.BytesIO(pdf_content)
 
 
-def test_create_paper_with_pdf(client, sample_pdf, db_session):
+@patch("app.api.routes.papers.validate_pdf_file")
+@patch("app.api.routes.papers.ensure_paper_version_directory")
+def test_create_paper_with_pdf(mock_ensure_dir, mock_validate, client, sample_pdf, db_session):
     """Test creating a paper with PDF upload."""
-    response = client.post(
-        "/api/v1/papers",
-        files={"pdf": ("test.pdf", sample_pdf, "application/pdf")},
-        data={
-            "title": "Test Paper",
-            "visibility": "private",
-        },
-    )
+    # Mock PDF validation
+    mock_validate.return_value = (True, None)
     
-    assert response.status_code == 201
-    data = response.json()
-    assert "aid" in data
-    assert data["version"] == 1
-    assert "viewer_url" in data
-    assert "paper_url" in data
+    # Mock directory creation
+    mock_dir = MagicMock()
+    mock_dir.parent = Path("/tmp/test")
+    mock_ensure_dir.return_value = mock_dir
     
-    # Verify paper was created
-    paper = db_session.query(Paper).filter(Paper.aid == data["aid"]).first()
-    assert paper is not None
-    assert paper.title == "Test Paper"
-    
-    # Verify version was created
-    version = db_session.query(PaperVersion).filter(PaperVersion.aid == data["aid"]).first()
-    assert version is not None
-    assert version.version == 1
+    # Mock file operations
+    with patch("app.api.routes.papers.shutil.move") as mock_move:
+        response = client.post(
+            "/api/v1/papers",
+            files={"pdf": ("test.pdf", sample_pdf, "application/pdf")},
+            data={
+                "title": "Test Paper",
+                "visibility": "private",
+            },
+        )
+        
+        assert response.status_code == 201
+        data = response.json()
+        assert "aid" in data
+        assert data["version"] == 1
+        assert "viewer_url" in data
+        assert "paper_url" in data
+        
+        # Verify paper was created
+        paper = db_session.query(Paper).filter(Paper.aid == data["aid"]).first()
+        assert paper is not None
+        assert paper.title == "Test Paper"
+        
+        # Verify version was created
+        version = db_session.query(PaperVersion).filter(PaperVersion.aid == data["aid"]).first()
+        assert version is not None
+        assert version.version == 1
 
 
-def test_create_paper_version(client, sample_pdf, db_session):
+@patch("app.api.routes.papers.validate_pdf_file")
+@patch("app.api.routes.papers.ensure_paper_version_directory")
+def test_create_paper_version(mock_ensure_dir, mock_validate, client, sample_pdf, db_session):
     """Test creating a new version of an existing paper."""
+    # Mock PDF validation
+    mock_validate.return_value = (True, None)
+    
+    # Mock directory creation
+    mock_dir = MagicMock()
+    mock_dir.parent = Path("/tmp/test")
+    mock_ensure_dir.return_value = mock_dir
+    
     # Create paper first
     paper = Paper(
         aid="test-001",
@@ -103,16 +121,17 @@ def test_create_paper_version(client, sample_pdf, db_session):
     db_session.commit()
     
     # Create version 2
-    response = client.post(
-        "/api/v1/papers/test-001/versions",
-        files={"pdf": ("test2.pdf", sample_pdf, "application/pdf")},
-    )
-    
-    assert response.status_code == 201
-    data = response.json()
-    assert data["aid"] == "test-001"
-    assert data["version"] == 2
-    assert "viewer_url" in data
+    with patch("app.api.routes.papers.shutil.move"):
+        response = client.post(
+            "/api/v1/papers/test-001/versions",
+            files={"pdf": ("test2.pdf", sample_pdf, "application/pdf")},
+        )
+        
+        assert response.status_code == 201
+        data = response.json()
+        assert data["aid"] == "test-001"
+        assert data["version"] == 2
+        assert "viewer_url" in data
 
 
 def test_get_paper_metadata(client, db_session):
