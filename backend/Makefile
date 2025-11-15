@@ -24,8 +24,16 @@ test-integration:
 e2e:
 	@echo "Starting docker-compose services..."
 	cd ../infra && docker compose up -d
-	@echo "Waiting for services to be ready..."
-	sleep 5
+	@echo "Waiting for services to be ready (polls every second, times out after 60s)..."
+	@timeout=60; \
+	while ! curl -sf http://localhost:8000/health > /dev/null 2>&1; do \
+		if [ "$$timeout" -le 0 ]; then \
+			echo "Service did not become ready in time."; \
+			exit 1; \
+		fi; \
+		sleep 1; \
+		timeout=$$((timeout - 1)); \
+	done
 	@echo "Running integration tests..."
 	uv run pytest -m integration
 	@echo "Stopping docker-compose services..."

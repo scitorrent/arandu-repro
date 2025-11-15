@@ -146,9 +146,19 @@ def test_executor_enforces_readonly_rootfs(tmp_path):
         # Mock time module to avoid comparison issues with timeout check
         # Pass explicit timeout_seconds to avoid using mock_settings.default_timeout_seconds (MagicMock)
         # Need to mock time.time() in both executor and logging modules
-        # log_step also uses time.time(), so we need multiple values
-        with patch("app.worker.executor.time.time", side_effect=[1000.0, 1001.0, 1002.0]), \
-             patch("app.utils.logging.time.time", side_effect=[999.0, 1000.0, 1001.0, 1002.0]):
+        # Use generators to create sequential timestamps for clarity
+        def make_time_gen(start: float = 1000.0, step: float = 1.0):
+            """Generate sequential timestamps for each call to time.time()."""
+            t = start
+            while True:
+                yield t
+                t += step
+
+        executor_time_gen = make_time_gen(1000.0, 1.0)
+        logging_time_gen = make_time_gen(999.0, 1.0)
+        with patch(
+            "app.worker.executor.time.time", side_effect=lambda: next(executor_time_gen)
+        ), patch("app.utils.logging.time.time", side_effect=lambda: next(logging_time_gen)):
             execute_command(
                 image_tag="test:latest",
                 command="echo test",

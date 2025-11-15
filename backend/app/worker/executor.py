@@ -85,7 +85,14 @@ def execute_command(
             }
 
             # Validate security constraints are set (BEFORE parsing/using them)
-            if not settings.docker_user or settings.docker_user == "root":
+            docker_user_str = str(settings.docker_user or "").strip().lower()
+            docker_user_uid = getattr(settings, "docker_user_uid", None)
+            if (
+                not docker_user_str
+                or docker_user_str == "root"
+                or docker_user_str == "0"
+                or (docker_user_uid is not None and docker_user_uid == 0)
+            ):
                 raise ExecutionError("Security violation: containers must run as non-root user")
             if settings.docker_cpu_limit <= 0:
                 raise ExecutionError("Security violation: CPU limit must be greater than 0")

@@ -74,7 +74,7 @@ def process_job(job_id: str):
                 job_id=job_id,
                 step="process_job",
                 event="job_not_found",
-                status="failed",
+                status="not_found",
             )
             return
 

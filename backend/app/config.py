@@ -34,7 +34,9 @@ class Settings(BaseSettings):
     docker_user_uid: int = 1000
     docker_allowlist_domains: list[
         str
-    ] = []  # Allowed domains for network access (empty = no network)
+    ] = (
+        []
+    )  # Reserved for future use: Allowed domains for network access (currently not implemented; empty = no network)
 
     # API
     api_base_url: str = "http://localhost:8000"

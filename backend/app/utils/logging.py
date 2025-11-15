@@ -13,6 +13,41 @@ logger = logging.getLogger(__name__)
 class JSONFormatter(logging.Formatter):
     """JSON formatter for structured logging."""
 
+    # Standard LogRecord attributes to exclude from custom fields
+    _STANDARD_ATTRS = {
+        "name",
+        "msg",
+        "args",
+        "created",
+        "filename",
+        "funcName",
+        "levelname",
+        "levelno",
+        "lineno",
+        "module",
+        "msecs",
+        "message",
+        "pathname",
+        "process",
+        "processName",
+        "relativeCreated",
+        "thread",
+        "threadName",
+        "exc_info",
+        "exc_text",
+        "stack_info",
+    }
+
+    # Structured fields that are explicitly handled above
+    _STRUCTURED_FIELDS = {
+        "job_id",
+        "step",
+        "event",
+        "duration_ms",
+        "status",
+        "error",
+    }
+
     def format(self, record: logging.LogRecord) -> str:
         """Format log record as JSON."""
         log_data = {
@@ -36,37 +71,10 @@ class JSONFormatter(logging.Formatter):
         if hasattr(record, "error"):
             log_data["error"] = record.error
 
-        # Add any extra fields
+        # Add any extra custom fields (exclude standard and structured fields)
+        excluded = self._STANDARD_ATTRS | self._STRUCTURED_FIELDS
         for key, value in record.__dict__.items():
-            if key not in (
-                "name",
-                "msg",
-                "args",
-                "created",
-                "filename",
-                "funcName",
-                "levelname",
-                "levelno",
-                "lineno",
-                "module",
-                "msecs",
-                "message",
-                "pathname",
-                "process",
-                "processName",
-                "relativeCreated",
-                "thread",
-                "threadName",
-                "exc_info",
-                "exc_text",
-                "stack_info",
-                "job_id",
-                "step",
-                "event",
-                "duration_ms",
-                "status",
-                "error",
-            ):
+            if key not in excluded:
                 log_data[key] = value
 
         return json.dumps(log_data)
