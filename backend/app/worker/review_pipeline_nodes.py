@@ -107,22 +107,23 @@ def claim_extraction_node(state: ReviewState) -> ReviewState:
     try:
         logger.info(f"Claim extraction node: processing review {state['review_id']}")
 
-        if not state.get("paper_text"):
-            raise ValueError("Paper text not available")
+        paper_text = state.get("paper_text")
+        if not paper_text:
+            logger.warning("Paper text not available for claim extraction")
+            return {"claims": []}
 
-        claims = extract_claims_by_section(state["paper_text"])
+        claims = extract_claims_by_section(paper_text)
         claims_json = claims_to_json(claims)
 
-        state["claims"] = claims_json
-
         logger.info(f"Claim extraction completed: {len(claims)} claims extracted")
+        return {"claims": claims_json}
     except Exception as e:
         logger.error(f"Claim extraction failed: {e}")
-        state["errors"].append({"step": "claim_extraction", "message": str(e)})
         # Don't fail completely, continue with empty claims
-        state["claims"] = []
-
-    return state
+        return {
+            "claims": [],
+            "errors": [{"step": "claim_extraction", "message": str(e)}],
+        }
 
 
 def citation_suggestion_node(state: ReviewState) -> ReviewState:
@@ -140,8 +141,7 @@ def citation_suggestion_node(state: ReviewState) -> ReviewState:
 
         if not state.get("claims"):
             logger.warning("No claims available for citation suggestion")
-            state["citations"] = {}
-            return state
+            return {"citations": {}}
 
         # Convert claims JSON back to Claim objects
         claim_objects = [
@@ -162,8 +162,9 @@ def citation_suggestion_node(state: ReviewState) -> ReviewState:
         )
 
         # Convert to JSON-serializable format
-        citations_json = {
-            claim_id: [
+        citations_json = {}
+        for claim_id, citations in citations_by_claim.items():
+            citations_json[claim_id] = [
                 {
                     "title": cit.title,
                     "authors": cit.authors,
@@ -177,18 +178,15 @@ def citation_suggestion_node(state: ReviewState) -> ReviewState:
                 }
                 for cit in citations
             ]
-            for claim_id, citations in citations_by_claim.items()
-        }
-
-        state["citations"] = citations_json
 
         logger.info(f"Citation suggestion completed: {len(citations_by_claim)} claims with citations")
+        return {"citations": citations_json}
     except Exception as e:
         logger.error(f"Citation suggestion failed: {e}")
-        state["errors"].append({"step": "citation_suggestion", "message": str(e)})
-        state["citations"] = {}
-
-    return state
+        return {
+            "citations": {},
+            "errors": [{"step": "citation_suggestion", "message": str(e)}],
+        }
 
 
 def checklist_generation_node(state: ReviewState) -> ReviewState:
@@ -316,23 +314,23 @@ def quality_score_node(state: ReviewState) -> ReviewState:
             paper_meta=state.get("paper_meta"),
         )
 
-        # Store quality score
-        state["quality_score"] = {
-            "value_0_100": score_result["score"],
-            "tier": score_result["tier"],
-            "version": score_result["version"],
-            "model_type": score_result["model_type"],
-            "features": features_dict,
-            "shap": shap_to_json(shap_explanations),
-            "narrative": narrative,
-        }
-
         logger.info(f"Quality score completed: {score_result['score']:.1f} (Tier {score_result['tier']})")
+        return {
+            "quality_score": {
+                "value_0_100": score_result["score"],
+                "tier": score_result["tier"],
+                "version": score_result["version"],
+                "model_type": score_result["model_type"],
+                "features": features_dict,
+                "shap": shap_to_json(shap_explanations),
+                "narrative": narrative,
+            }
+        }
     except Exception as e:
         logger.error(f"Quality score failed: {e}")
-        state["errors"].append({"step": "quality_score", "message": str(e)})
-
-    return state
+        return {
+            "errors": [{"step": "quality_score", "message": str(e)}],
+        }
 
 
 def badge_generation_node(state: ReviewState) -> ReviewState:
