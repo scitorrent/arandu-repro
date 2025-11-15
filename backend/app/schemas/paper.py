@@ -7,13 +7,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, Field
 
-
-class PaperVisibility(str, Enum):
-    """Paper visibility enumeration."""
-
-    PRIVATE = "private"
-    UNLISTED = "unlisted"
-    PUBLIC = "public"
+from app.models.enums import PaperVisibility
 
 
 class PaperBase(BaseModel):

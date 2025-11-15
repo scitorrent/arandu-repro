@@ -7,12 +7,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, Field, field_validator
 
-
-class QualityScoreScope(str, Enum):
-    """Quality score scope enumeration."""
-
-    PAPER = "paper"
-    VERSION = "version"
+from app.models.enums import QualityScoreScope
 
 
 class QualityScoreSignals(BaseModel):

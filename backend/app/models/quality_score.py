@@ -2,7 +2,6 @@
 
 import uuid
 from datetime import UTC, datetime
-from enum import Enum
 
 from sqlalchemy import (
     CheckConstraint,
@@ -19,13 +18,7 @@ from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 
 from app.db.base import Base
-
-
-class QualityScoreScope(str, Enum):
-    """Quality score scope enumeration."""
-
-    PAPER = "paper"
-    VERSION = "version"
+from app.models.enums import QualityScoreScope
 
 
 class QualityScore(Base):
@@ -70,5 +63,6 @@ class QualityScore(Base):
         Index("idx_quality_scores_scope", "scope"),
         Index("idx_quality_scores_created_at", "created_at"),
         Index("idx_quality_scores_score", "score"),
+        Index("idx_quality_scores_score_created", "score", "created_at"),  # Composto para ranking
     )
 

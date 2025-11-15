@@ -19,9 +19,19 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    # Create ENUM for paper visibility
-    paper_visibility_enum = postgresql.ENUM('private', 'unlisted', 'public', name='papervisibility')
-    paper_visibility_enum.create(op.get_bind(), checkfirst=True)
+    # Create ENUM for paper visibility (using native_enum=False for compatibility)
+    # Use String with CheckConstraint instead of native ENUM for easier evolution
+    paper_visibility_enum = postgresql.ENUM(
+        'private', 'unlisted', 'public', name='papervisibility', create_type=False
+    )
+    # Create as String with check constraint for better compatibility
+    op.execute("""
+        DO $$ BEGIN
+            CREATE TYPE papervisibility AS ENUM ('private', 'unlisted', 'public');
+        EXCEPTION
+            WHEN duplicate_object THEN null;
+        END $$;
+    """)
     
     # Create papers table
     op.create_table(
