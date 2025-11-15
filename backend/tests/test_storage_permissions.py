@@ -122,6 +122,7 @@ def test_papers_base_quota_and_permissions():
 def test_concurrent_directory_creation():
     """Test concurrent directory creation (atomicity)."""
     import threading
+    import time
     
     base = validate_papers_base()
     aid = generate_secure_aid()
@@ -129,13 +130,16 @@ def test_concurrent_directory_creation():
     
     created_paths = []
     errors = []
+    lock = threading.Lock()
     
     def create_dir():
         try:
             path = ensure_paper_version_directory(aid, version)
-            created_paths.append(path)
+            with lock:
+                created_paths.append(path)
         except Exception as e:
-            errors.append(str(e))
+            with lock:
+                errors.append(str(e))
     
     # Create directories concurrently
     threads = [threading.Thread(target=create_dir) for _ in range(5)]
@@ -145,14 +149,22 @@ def test_concurrent_directory_creation():
         t.join()
     
     # All should succeed (directory creation is idempotent)
-    assert len(errors) == 0
+    assert len(errors) == 0, f"Errors: {errors}"
     assert len(created_paths) == 5
     
-    # All paths should be the same
-    assert len(set(str(p) for p in created_paths)) == 1
+    # All paths should be the same (normalize paths)
+    normalized_paths = [str(p.resolve()) for p in created_paths]
+    assert len(set(normalized_paths)) == 1, f"Paths differ: {set(normalized_paths)}"
     
     # Cleanup
-    created_paths[0].parent.parent.rmdir(parents=True, ignore_errors=True)
+    if created_paths:
+        try:
+            # Remove up to papers/{aid}
+            cleanup_path = created_paths[0].parent.parent
+            if cleanup_path.exists():
+                shutil.rmtree(cleanup_path, ignore_errors=True)
+        except Exception:
+            pass  # Ignore cleanup errors
 
 
 def test_papers_base_config():
