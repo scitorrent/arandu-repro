@@ -87,6 +87,14 @@ def generate_text(prompt: str, temperature: float = 0.3, max_tokens: int = 2000)
         return None
 
     try:
+        # Check if it's a Vertex AI model (has different API structure)
+        # Vertex AI GenerativeModel has different response structure
+        is_vertex = (
+            hasattr(client, "project")
+            or "vertexai" in str(type(client)).lower()
+            or "GenerativeModel" in str(type(client))
+        )
+
         response = client.generate_content(
             prompt,
             generation_config={
@@ -94,15 +102,28 @@ def generate_text(prompt: str, temperature: float = 0.3, max_tokens: int = 2000)
                 "max_output_tokens": max_tokens,
             },
         )
-        return response.text
+
+        if is_vertex:
+            # Vertex AI returns response.candidates[0].content.parts[0].text
+            if hasattr(response, "candidates") and response.candidates:
+                return response.candidates[0].content.parts[0].text
+            elif hasattr(response, "text"):
+                return response.text
+            else:
+                logger.error(f"Unexpected Vertex AI response format: {type(response)}")
+                return None
+        else:
+            # Standard google-generativeai (API key)
+            return response.text
     except Exception as e:
         logger.error(f"LLM generation failed: {e}")
         # Log more details for debugging
         error_msg = str(e)
-        if "401" in error_msg or "CREDENTIALS" in error_msg:
+        if "401" in error_msg or "CREDENTIALS" in error_msg or "PERMISSION_DENIED" in error_msg or "403" in error_msg:
             logger.warning(
                 "Gemini API authentication failed. "
-                "For Vertex AI, set GOOGLE_APPLICATION_CREDENTIALS env var. "
+                "For Vertex AI, ensure GOOGLE_APPLICATION_CREDENTIALS points to valid service account key "
+                f"and project {settings.gcp_project_id} has Vertex AI API enabled. "
                 "For API key, ensure GEMINI_API_KEY is valid."
             )
         return None
