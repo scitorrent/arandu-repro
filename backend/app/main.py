@@ -5,7 +5,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api.routes import health, jobs
+from app.api.routes import health, jobs, reviews
 
 
 @asynccontextmanager
@@ -38,3 +38,4 @@ app.add_middleware(
 # Include routers
 app.include_router(health.router)
 app.include_router(jobs.router, prefix="/api/v1", tags=["jobs"])
+app.include_router(reviews.router, prefix="/api/v1")
