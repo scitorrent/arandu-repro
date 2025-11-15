@@ -9,9 +9,8 @@ from uuid import UUID
 
 import httpx
 from fastapi import APIRouter, File, Form, HTTPException, Query, Request, Response, UploadFile
-from fastapi.responses import FileResponse, StreamingResponse
-from sqlalchemy import func, select
-from sqlalchemy.orm import Session
+from fastapi.responses import FileResponse
+from sqlalchemy import func
 
 from app.config import settings
 from app.db.session import get_db
@@ -22,8 +21,7 @@ from app.models import (
     PaperVisibility,
     QualityScore,
 )
-from app.schemas.paper import PaperCreate, PaperUpdate
-from app.schemas.paper_version import PaperVersionCreate
+# Schemas not needed for these endpoints (using Form/Query directly)
 from app.utils.pdf_validator import validate_pdf_file
 from app.utils.storage import (
     ensure_paper_version_directory,
@@ -51,20 +49,19 @@ async def create_paper(
     """
     db = SessionLocal()
     try:
-    
-    # Validate input
-    if not pdf and not url:
-        raise HTTPException(status_code=400, detail="Either 'pdf' or 'url' must be provided")
-    
-    if pdf and url:
-        raise HTTPException(status_code=400, detail="Provide either 'pdf' or 'url', not both")
-    
-    # Generate AID
-    aid = generate_secure_aid()
-    
-    # Handle PDF upload
-    pdf_path = None
-    if pdf:
+        # Validate input
+        if not pdf and not url:
+            raise HTTPException(status_code=400, detail="Either 'pdf' or 'url' must be provided")
+        
+        if pdf and url:
+            raise HTTPException(status_code=400, detail="Provide either 'pdf' or 'url', not both")
+        
+        # Generate AID
+        aid = generate_secure_aid()
+        
+        # Handle PDF upload
+        pdf_path = None
+        if pdf:
         # Validate file
         if not pdf.filename or not pdf.filename.endswith(".pdf"):
             raise HTTPException(status_code=400, detail="File must be a PDF")
@@ -86,7 +83,7 @@ async def create_paper(
         shutil.move(str(tmp_path), str(pdf_path))
     
     # Handle URL
-    elif url:
+        elif url:
         try:
             async with httpx.AsyncClient(timeout=30.0) as client:
                 response = await client.get(url)
@@ -107,11 +104,11 @@ async def create_paper(
                 version_dir = ensure_paper_version_directory(aid, 1)
                 pdf_path = version_dir
                 shutil.move(str(tmp_path), str(pdf_path))
-        except httpx.HTTPError as e:
+            except httpx.HTTPError as e:
             raise HTTPException(status_code=400, detail=f"Failed to download PDF from URL: {str(e)}")
     
     # Create Paper
-    paper = Paper(
+            paper = Paper(
         aid=aid,
         title=title,
         repo_url=repo_url,
@@ -154,9 +151,8 @@ async def create_paper_version(
     """Create a new version of an existing paper."""
     db = SessionLocal()
     try:
-    
-    # Get paper
-    paper = db.query(Paper).filter(Paper.aid == aid, Paper.deleted_at.is_(None)).first()
+        # Get paper
+        paper = db.query(Paper).filter(Paper.aid == aid, Paper.deleted_at.is_(None)).first()
     if not paper:
         raise HTTPException(status_code=404, detail="Paper not found")
     
@@ -210,11 +206,11 @@ async def create_paper_version(
                 version_dir = ensure_paper_version_directory(aid, new_version)
                 pdf_path = version_dir
                 shutil.move(str(tmp_path), str(pdf_path))
-        except httpx.HTTPError as e:
+            except httpx.HTTPError as e:
             raise HTTPException(status_code=400, detail=f"Failed to download PDF from URL: {str(e)}")
     
     # Create PaperVersion
-    rel_path = get_paper_version_path(aid, new_version)
+            rel_path = get_paper_version_path(aid, new_version)
     version = PaperVersion(
         aid=paper.aid,
         version=new_version,
@@ -241,9 +237,8 @@ async def get_paper(
     """Get paper metadata."""
     db = SessionLocal()
     try:
-    
-    paper = db.query(Paper).filter(Paper.aid == aid, Paper.deleted_at.is_(None)).first()
-    if not paper:
+        paper = db.query(Paper).filter(Paper.aid == aid, Paper.deleted_at.is_(None)).first()
+        if not paper:
         raise HTTPException(status_code=404, detail="Paper not found")
     
     # Get latest version
@@ -315,9 +310,8 @@ async def get_paper_viewer(
     """Stream PDF with Range support (206 Partial Content)."""
     db = SessionLocal()
     try:
-    
-    # Get paper
-    paper = db.query(Paper).filter(Paper.aid == aid, Paper.deleted_at.is_(None)).first()
+        # Get paper
+        paper = db.query(Paper).filter(Paper.aid == aid, Paper.deleted_at.is_(None)).first()
     if not paper:
         raise HTTPException(status_code=404, detail="Paper not found")
     
@@ -394,9 +388,8 @@ async def head_paper_viewer(
     """HEAD request for PDF viewer (metadata only)."""
     db = SessionLocal()
     try:
-    
-    paper = db.query(Paper).filter(Paper.aid == aid, Paper.deleted_at.is_(None)).first()
-    if not paper:
+        paper = db.query(Paper).filter(Paper.aid == aid, Paper.deleted_at.is_(None)).first()
+        if not paper:
         raise HTTPException(status_code=404, detail="Paper not found")
     
     if v:
@@ -447,9 +440,8 @@ async def get_paper_claims(
     """Get claims for a paper version."""
     db = SessionLocal()
     try:
-    
-    # Get paper
-    paper = db.query(Paper).filter(Paper.aid == aid, Paper.deleted_at.is_(None)).first()
+        # Get paper
+        paper = db.query(Paper).filter(Paper.aid == aid, Paper.deleted_at.is_(None)).first()
     if not paper:
         raise HTTPException(status_code=404, detail="Paper not found")
     
