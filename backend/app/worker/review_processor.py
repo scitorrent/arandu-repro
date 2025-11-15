@@ -230,8 +230,37 @@ def process_review(review_id: str) -> None:
                     status="processing",
                 )
 
-            # TODO: Steps 6-7 (Badges, Reports)
-            # For now, mark as completed after quality score
+            # Step 6: Badge generation
+            with log_step(review_id, "badge_generation", review_id=review_id):
+                # Build review data for badge computation
+                review_data = {
+                    "id": str(review.id),
+                    "claims": review.claims or [],
+                    "checklist": review.checklist or {},
+                    "citations": review.citations or {},
+                }
+
+                # Compute badge statuses
+                badges_status = {
+                    "claim_mapped": compute_badge_status("claim-mapped", review_data),
+                    "method_check": compute_badge_status("method-check", review_data),
+                    "citations_augmented": compute_badge_status("citations-augmented", review_data),
+                }
+
+                review.badges = badges_status
+                db.commit()
+
+                log_event(
+                    logging.INFO,
+                    f"Generated badges: {badges_status}",
+                    job_id=review_id,
+                    step="badge_generation",
+                    event="badges_generated",
+                    status="processing",
+                )
+
+            # TODO: Step 7 (Reports)
+            # For now, mark as completed after badges
             review.status = ReviewStatus.COMPLETED
             db.commit()
 
