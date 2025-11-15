@@ -1,11 +1,9 @@
 """Paper hosting APIs."""
 
-import hashlib
 import shutil
 import tempfile
 from pathlib import Path
 from typing import Optional
-from uuid import UUID
 
 import httpx
 from fastapi import APIRouter, File, Form, HTTPException, Query, Request, Response, UploadFile
@@ -13,7 +11,7 @@ from fastapi.responses import FileResponse
 from sqlalchemy import func
 
 from app.config import settings
-from app.db.session import get_db
+from app.db.session import SessionLocal
 from app.models import (
     Claim,
     Paper,
@@ -21,7 +19,6 @@ from app.models import (
     PaperVisibility,
     QualityScore,
 )
-# Schemas not needed for these endpoints (using Form/Query directly)
 from app.utils.pdf_validator import validate_pdf_file
 from app.utils.storage import (
     ensure_paper_version_directory,
@@ -62,81 +59,81 @@ async def create_paper(
         # Handle PDF upload
         pdf_path = None
         if pdf:
-        # Validate file
-        if not pdf.filename or not pdf.filename.endswith(".pdf"):
-            raise HTTPException(status_code=400, detail="File must be a PDF")
+            # Validate file
+            if not pdf.filename or not pdf.filename.endswith(".pdf"):
+                raise HTTPException(status_code=400, detail="File must be a PDF")
+            
+            # Save to temp file first
+            with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp_file:
+                shutil.copyfileobj(pdf.file, tmp_file)
+                tmp_path = Path(tmp_file.name)
+            
+            # Validate PDF
+            is_valid, error = validate_pdf_file(tmp_path)
+            if not is_valid:
+                tmp_path.unlink()
+                raise HTTPException(status_code=400, detail=f"Invalid PDF: {error}")
+            
+            # Move to final location
+            version_dir = ensure_paper_version_directory(aid, 1)
+            pdf_path = version_dir
+            shutil.move(str(tmp_path), str(pdf_path))
         
-        # Save to temp file first
-        with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp_file:
-            shutil.copyfileobj(pdf.file, tmp_file)
-            tmp_path = Path(tmp_file.name)
-        
-        # Validate PDF
-        is_valid, error = validate_pdf_file(tmp_path)
-        if not is_valid:
-            tmp_path.unlink()
-            raise HTTPException(status_code=400, detail=f"Invalid PDF: {error}")
-        
-        # Move to final location
-        version_dir = ensure_paper_version_directory(aid, 1)
-        pdf_path = version_dir
-        shutil.move(str(tmp_path), str(pdf_path))
-    
-    # Handle URL
+        # Handle URL
         elif url:
-        try:
-            async with httpx.AsyncClient(timeout=30.0) as client:
-                response = await client.get(url)
-                response.raise_for_status()
-                
-                # Save to temp file
-                with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp_file:
-                    tmp_file.write(response.content)
-                    tmp_path = Path(tmp_file.name)
-                
-                # Validate PDF
-                is_valid, error = validate_pdf_file(tmp_path)
-                if not is_valid:
-                    tmp_path.unlink()
-                    raise HTTPException(status_code=400, detail=f"Invalid PDF from URL: {error}")
-                
-                # Move to final location
-                version_dir = ensure_paper_version_directory(aid, 1)
-                pdf_path = version_dir
-                shutil.move(str(tmp_path), str(pdf_path))
+            try:
+                async with httpx.AsyncClient(timeout=30.0) as client:
+                    response = await client.get(url)
+                    response.raise_for_status()
+                    
+                    # Save to temp file
+                    with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp_file:
+                        tmp_file.write(response.content)
+                        tmp_path = Path(tmp_file.name)
+                    
+                    # Validate PDF
+                    is_valid, error = validate_pdf_file(tmp_path)
+                    if not is_valid:
+                        tmp_path.unlink()
+                        raise HTTPException(status_code=400, detail=f"Invalid PDF from URL: {error}")
+                    
+                    # Move to final location
+                    version_dir = ensure_paper_version_directory(aid, 1)
+                    pdf_path = version_dir
+                    shutil.move(str(tmp_path), str(pdf_path))
             except httpx.HTTPError as e:
-            raise HTTPException(status_code=400, detail=f"Failed to download PDF from URL: {str(e)}")
-    
-    # Create Paper
-            paper = Paper(
-        aid=aid,
-        title=title,
-        repo_url=repo_url,
-        license=license,
-        visibility=visibility,
-    )
-    db.add(paper)
-    db.flush()
-    
-    # Create PaperVersion v1
-    rel_path = get_paper_version_path(aid, 1)
-    version = PaperVersion(
-        aid=paper.aid,
-        version=1,
-        pdf_path=str(rel_path),
-    )
-    db.add(version)
-    db.commit()
-    db.refresh(paper)
-    db.refresh(version)
-    
-    base_url = settings.api_base_url
-    return {
-        "aid": aid,
-        "version": 1,
-        "viewer_url": f"{base_url}/api/v1/papers/{aid}/viewer",
-        "paper_url": f"{base_url}/api/v1/papers/{aid}",
-    }
+                raise HTTPException(status_code=400, detail=f"Failed to download PDF from URL: {str(e)}")
+        
+        # Create Paper
+        paper = Paper(
+            aid=aid,
+            title=title,
+            repo_url=repo_url,
+            license=license,
+            visibility=visibility,
+        )
+        db.add(paper)
+        db.flush()
+        
+        # Create PaperVersion v1
+        rel_path = get_paper_version_path(aid, 1)
+        version = PaperVersion(
+            aid=paper.aid,
+            version=1,
+            pdf_path=str(rel_path),
+        )
+        db.add(version)
+        db.commit()
+        db.refresh(paper)
+        db.refresh(version)
+        
+        base_url = settings.api_base_url
+        return {
+            "aid": aid,
+            "version": 1,
+            "viewer_url": f"{base_url}/api/v1/papers/{aid}/viewer",
+            "paper_url": f"{base_url}/api/v1/papers/{aid}",
+        }
     finally:
         db.close()
 
@@ -153,79 +150,79 @@ async def create_paper_version(
     try:
         # Get paper
         paper = db.query(Paper).filter(Paper.aid == aid, Paper.deleted_at.is_(None)).first()
-    if not paper:
-        raise HTTPException(status_code=404, detail="Paper not found")
-    
-    # Get latest version
-    latest_version = (
-        db.query(PaperVersion)
-        .filter(PaperVersion.aid == aid, PaperVersion.deleted_at.is_(None))
-        .order_by(PaperVersion.version.desc())
-        .first()
-    )
-    new_version = (latest_version.version + 1) if latest_version else 1
-    
-    # Validate input
-    if not pdf and not url:
-        raise HTTPException(status_code=400, detail="Either 'pdf' or 'url' must be provided")
-    
-    # Handle PDF upload (same logic as create_paper)
-    pdf_path = None
-    if pdf:
-        if not pdf.filename or not pdf.filename.endswith(".pdf"):
-            raise HTTPException(status_code=400, detail="File must be a PDF")
+        if not paper:
+            raise HTTPException(status_code=404, detail="Paper not found")
         
-        with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp_file:
-            shutil.copyfileobj(pdf.file, tmp_file)
-            tmp_path = Path(tmp_file.name)
+        # Get latest version
+        latest_version = (
+            db.query(PaperVersion)
+            .filter(PaperVersion.aid == aid, PaperVersion.deleted_at.is_(None))
+            .order_by(PaperVersion.version.desc())
+            .first()
+        )
+        new_version = (latest_version.version + 1) if latest_version else 1
         
-        is_valid, error = validate_pdf_file(tmp_path)
-        if not is_valid:
-            tmp_path.unlink()
-            raise HTTPException(status_code=400, detail=f"Invalid PDF: {error}")
+        # Validate input
+        if not pdf and not url:
+            raise HTTPException(status_code=400, detail="Either 'pdf' or 'url' must be provided")
         
-        version_dir = ensure_paper_version_directory(aid, new_version)
-        pdf_path = version_dir
-        shutil.move(str(tmp_path), str(pdf_path))
-    
-    elif url:
-        try:
-            async with httpx.AsyncClient(timeout=30.0) as client:
-                response = await client.get(url)
-                response.raise_for_status()
-                
-                with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp_file:
-                    tmp_file.write(response.content)
-                    tmp_path = Path(tmp_file.name)
-                
-                is_valid, error = validate_pdf_file(tmp_path)
-                if not is_valid:
-                    tmp_path.unlink()
-                    raise HTTPException(status_code=400, detail=f"Invalid PDF from URL: {error}")
-                
-                version_dir = ensure_paper_version_directory(aid, new_version)
-                pdf_path = version_dir
-                shutil.move(str(tmp_path), str(pdf_path))
+        # Handle PDF upload (same logic as create_paper)
+        pdf_path = None
+        if pdf:
+            if not pdf.filename or not pdf.filename.endswith(".pdf"):
+                raise HTTPException(status_code=400, detail="File must be a PDF")
+            
+            with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp_file:
+                shutil.copyfileobj(pdf.file, tmp_file)
+                tmp_path = Path(tmp_file.name)
+            
+            is_valid, error = validate_pdf_file(tmp_path)
+            if not is_valid:
+                tmp_path.unlink()
+                raise HTTPException(status_code=400, detail=f"Invalid PDF: {error}")
+            
+            version_dir = ensure_paper_version_directory(aid, new_version)
+            pdf_path = version_dir
+            shutil.move(str(tmp_path), str(pdf_path))
+        
+        elif url:
+            try:
+                async with httpx.AsyncClient(timeout=30.0) as client:
+                    response = await client.get(url)
+                    response.raise_for_status()
+                    
+                    with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp_file:
+                        tmp_file.write(response.content)
+                        tmp_path = Path(tmp_file.name)
+                    
+                    is_valid, error = validate_pdf_file(tmp_path)
+                    if not is_valid:
+                        tmp_path.unlink()
+                        raise HTTPException(status_code=400, detail=f"Invalid PDF from URL: {error}")
+                    
+                    version_dir = ensure_paper_version_directory(aid, new_version)
+                    pdf_path = version_dir
+                    shutil.move(str(tmp_path), str(pdf_path))
             except httpx.HTTPError as e:
-            raise HTTPException(status_code=400, detail=f"Failed to download PDF from URL: {str(e)}")
-    
-    # Create PaperVersion
-            rel_path = get_paper_version_path(aid, new_version)
-    version = PaperVersion(
-        aid=paper.aid,
-        version=new_version,
-        pdf_path=str(rel_path),
-    )
-    db.add(version)
-    db.commit()
-    db.refresh(version)
-    
-    base_url = settings.api_base_url
-    return {
-        "aid": aid,
-        "version": new_version,
-        "viewer_url": f"{base_url}/api/v1/papers/{aid}/viewer?v={new_version}",
-    }
+                raise HTTPException(status_code=400, detail=f"Failed to download PDF from URL: {str(e)}")
+        
+        # Create PaperVersion
+        rel_path = get_paper_version_path(aid, new_version)
+        version = PaperVersion(
+            aid=paper.aid,
+            version=new_version,
+            pdf_path=str(rel_path),
+        )
+        db.add(version)
+        db.commit()
+        db.refresh(version)
+        
+        base_url = settings.api_base_url
+        return {
+            "aid": aid,
+            "version": new_version,
+            "viewer_url": f"{base_url}/api/v1/papers/{aid}/viewer?v={new_version}",
+        }
     finally:
         db.close()
 
@@ -239,64 +236,66 @@ async def get_paper(
     try:
         paper = db.query(Paper).filter(Paper.aid == aid, Paper.deleted_at.is_(None)).first()
         if not paper:
-        raise HTTPException(status_code=404, detail="Paper not found")
-    
-    # Get latest version
-    latest_version = (
-        db.query(PaperVersion)
-        .filter(PaperVersion.aid == aid, PaperVersion.deleted_at.is_(None))
-        .order_by(PaperVersion.version.desc())
-        .first()
-    )
-    
-    # Get counts
-    claims_count = (
-        db.query(func.count(Claim.id))
-        .join(PaperVersion)
-        .filter(PaperVersion.aid == aid, PaperVersion.deleted_at.is_(None))
-        .scalar() or 0
-    )
-    
-    scores_count = (
-        db.query(func.count(QualityScore.id))
-        .filter(
-            (QualityScore.paper_id == paper.id) | (QualityScore.paper_version_id.in_(
-                db.query(PaperVersion.id).filter(PaperVersion.aid == aid)
-            ))
+            raise HTTPException(status_code=404, detail="Paper not found")
+        
+        # Get latest version
+        latest_version = (
+            db.query(PaperVersion)
+            .filter(PaperVersion.aid == aid, PaperVersion.deleted_at.is_(None))
+            .order_by(PaperVersion.version.desc())
+            .first()
         )
-        .scalar() or 0
-    )
-    
-    versions_count = (
-        db.query(func.count(PaperVersion.id))
-        .filter(PaperVersion.aid == aid, PaperVersion.deleted_at.is_(None))
-        .scalar() or 0
-    )
-    
-    # Get latest score
-    latest_score = (
-        db.query(QualityScore)
-        .filter(
-            (QualityScore.paper_id == paper.id) | (QualityScore.paper_version_id.in_(
-                db.query(PaperVersion.id).filter(PaperVersion.aid == aid)
-            ))
+        
+        # Get counts
+        claims_count = (
+            db.query(func.count(Claim.id))
+            .join(PaperVersion)
+            .filter(PaperVersion.aid == aid, PaperVersion.deleted_at.is_(None))
+            .scalar() or 0
         )
-        .order_by(QualityScore.created_at.desc())
-        .first()
-    )
-    
-    return {
-        "aid": paper.aid,
-        "title": paper.title,
-        "latest_version": latest_version.version if latest_version else None,
-        "approved_public": paper.approved_public_at is not None,
-        "latest_score": latest_score.score if latest_score else None,
-        "counts": {
-            "claims": claims_count,
-            "scores": scores_count,
-            "versions": versions_count,
-        },
-    }
+        
+        scores_count = (
+            db.query(func.count(QualityScore.id))
+            .filter(
+                (QualityScore.paper_id == paper.id) | (QualityScore.paper_version_id.in_(
+                    db.query(PaperVersion.id).filter(PaperVersion.aid == aid)
+                ))
+            )
+            .scalar() or 0
+        )
+        
+        versions_count = (
+            db.query(func.count(PaperVersion.id))
+            .filter(PaperVersion.aid == aid, PaperVersion.deleted_at.is_(None))
+            .scalar() or 0
+        )
+        
+        # Get latest score
+        latest_score = (
+            db.query(QualityScore)
+            .filter(
+                (QualityScore.paper_id == paper.id) | (QualityScore.paper_version_id.in_(
+                    db.query(PaperVersion.id).filter(PaperVersion.aid == aid)
+                ))
+            )
+            .order_by(QualityScore.created_at.desc())
+            .first()
+        )
+        
+        return {
+            "aid": paper.aid,
+            "title": paper.title,
+            "visibility": paper.visibility.value,
+            "latest_version": latest_version.version if latest_version else None,
+            "approved_public": paper.approved_public_at is not None,
+            "approved_public_at": paper.approved_public_at.isoformat() if paper.approved_public_at else None,
+            "latest_score": latest_score.score if latest_score else None,
+            "counts": {
+                "claims": claims_count,
+                "scores": scores_count,
+                "versions": versions_count,
+            },
+        }
     finally:
         db.close()
 
@@ -312,70 +311,70 @@ async def get_paper_viewer(
     try:
         # Get paper
         paper = db.query(Paper).filter(Paper.aid == aid, Paper.deleted_at.is_(None)).first()
-    if not paper:
-        raise HTTPException(status_code=404, detail="Paper not found")
-    
-    # Get version
-    if v:
-        version = (
-            db.query(PaperVersion)
-            .filter(PaperVersion.aid == aid, PaperVersion.version == v, PaperVersion.deleted_at.is_(None))
-            .first()
-        )
-    else:
-        version = (
-            db.query(PaperVersion)
-            .filter(PaperVersion.aid == aid, PaperVersion.deleted_at.is_(None))
-            .order_by(PaperVersion.version.desc())
-            .first()
-        )
-    
-    if not version:
-        raise HTTPException(status_code=404, detail="Paper version not found")
-    
-    # Get full path
-    base = validate_papers_base()
-    full_path = base / version.pdf_path
-    
-    if not full_path.exists():
-        raise HTTPException(status_code=404, detail="PDF file not found")
-    
-    # Handle Range requests
-    range_header = request.headers.get("range")
-    file_size = full_path.stat().st_size
-    
-    if range_header:
-        # Parse Range header
-        range_match = range_header.replace("bytes=", "").split("-")
-        start = int(range_match[0]) if range_match[0] else 0
-        end = int(range_match[1]) if range_match[1] else file_size - 1
+        if not paper:
+            raise HTTPException(status_code=404, detail="Paper not found")
         
-        if start >= file_size or end >= file_size:
-            raise HTTPException(status_code=416, detail="Range Not Satisfiable")
+        # Get version
+        if v:
+            version = (
+                db.query(PaperVersion)
+                .filter(PaperVersion.aid == aid, PaperVersion.version == v, PaperVersion.deleted_at.is_(None))
+                .first()
+            )
+        else:
+            version = (
+                db.query(PaperVersion)
+                .filter(PaperVersion.aid == aid, PaperVersion.deleted_at.is_(None))
+                .order_by(PaperVersion.version.desc())
+                .first()
+            )
         
-        # Read chunk
-        with open(full_path, "rb") as f:
-            f.seek(start)
-            chunk = f.read(end - start + 1)
+        if not version:
+            raise HTTPException(status_code=404, detail="Paper version not found")
         
-        headers = {
-            "Content-Range": f"bytes {start}-{end}/{file_size}",
-            "Accept-Ranges": "bytes",
-            "Content-Length": str(len(chunk)),
-            "Content-Type": "application/pdf",
-        }
+        # Get full path
+        base = validate_papers_base()
+        full_path = base / version.pdf_path
         
-        return Response(content=chunk, status_code=206, headers=headers)
-    else:
-        # Full file
-        return FileResponse(
-            path=full_path,
-            media_type="application/pdf",
-            headers={
+        if not full_path.exists():
+            raise HTTPException(status_code=404, detail="PDF file not found")
+        
+        # Handle Range requests
+        range_header = request.headers.get("range")
+        file_size = full_path.stat().st_size
+        
+        if range_header:
+            # Parse Range header
+            range_match = range_header.replace("bytes=", "").split("-")
+            start = int(range_match[0]) if range_match[0] else 0
+            end = int(range_match[1]) if range_match[1] else file_size - 1
+            
+            if start >= file_size or end >= file_size:
+                raise HTTPException(status_code=416, detail="Range Not Satisfiable")
+            
+            # Read chunk
+            with open(full_path, "rb") as f:
+                f.seek(start)
+                chunk = f.read(end - start + 1)
+            
+            headers = {
+                "Content-Range": f"bytes {start}-{end}/{file_size}",
                 "Accept-Ranges": "bytes",
-                "Content-Length": str(file_size),
-            },
-        )
+                "Content-Length": str(len(chunk)),
+                "Content-Type": "application/pdf",
+            }
+            
+            return Response(content=chunk, status_code=206, headers=headers)
+        else:
+            # Full file
+            return FileResponse(
+                path=full_path,
+                media_type="application/pdf",
+                headers={
+                    "Accept-Ranges": "bytes",
+                    "Content-Length": str(file_size),
+                },
+            )
     finally:
         db.close()
 
@@ -390,41 +389,41 @@ async def head_paper_viewer(
     try:
         paper = db.query(Paper).filter(Paper.aid == aid, Paper.deleted_at.is_(None)).first()
         if not paper:
-        raise HTTPException(status_code=404, detail="Paper not found")
-    
-    if v:
-        version = (
-            db.query(PaperVersion)
-            .filter(PaperVersion.aid == aid, PaperVersion.version == v, PaperVersion.deleted_at.is_(None))
-            .first()
+            raise HTTPException(status_code=404, detail="Paper not found")
+        
+        if v:
+            version = (
+                db.query(PaperVersion)
+                .filter(PaperVersion.aid == aid, PaperVersion.version == v, PaperVersion.deleted_at.is_(None))
+                .first()
+            )
+        else:
+            version = (
+                db.query(PaperVersion)
+                .filter(PaperVersion.aid == aid, PaperVersion.deleted_at.is_(None))
+                .order_by(PaperVersion.version.desc())
+                .first()
+            )
+        
+        if not version:
+            raise HTTPException(status_code=404, detail="Paper version not found")
+        
+        base = validate_papers_base()
+        full_path = base / version.pdf_path
+        
+        if not full_path.exists():
+            raise HTTPException(status_code=404, detail="PDF file not found")
+        
+        file_size = full_path.stat().st_size
+        
+        return Response(
+            status_code=200,
+            headers={
+                "Content-Type": "application/pdf",
+                "Content-Length": str(file_size),
+                "Accept-Ranges": "bytes",
+            },
         )
-    else:
-        version = (
-            db.query(PaperVersion)
-            .filter(PaperVersion.aid == aid, PaperVersion.deleted_at.is_(None))
-            .order_by(PaperVersion.version.desc())
-            .first()
-        )
-    
-    if not version:
-        raise HTTPException(status_code=404, detail="Paper version not found")
-    
-    base = validate_papers_base()
-    full_path = base / version.pdf_path
-    
-    if not full_path.exists():
-        raise HTTPException(status_code=404, detail="PDF file not found")
-    
-    file_size = full_path.stat().st_size
-    
-    return Response(
-        status_code=200,
-        headers={
-            "Content-Type": "application/pdf",
-            "Content-Length": str(file_size),
-            "Accept-Ranges": "bytes",
-        },
-    )
     finally:
         db.close()
 
@@ -442,51 +441,50 @@ async def get_paper_claims(
     try:
         # Get paper
         paper = db.query(Paper).filter(Paper.aid == aid, Paper.deleted_at.is_(None)).first()
-    if not paper:
-        raise HTTPException(status_code=404, detail="Paper not found")
-    
-    # Get version
-    if version:
-        paper_version = (
-            db.query(PaperVersion)
-            .filter(PaperVersion.aid == aid, PaperVersion.version == version, PaperVersion.deleted_at.is_(None))
-            .first()
-        )
-    else:
-        paper_version = (
-            db.query(PaperVersion)
-            .filter(PaperVersion.aid == aid, PaperVersion.deleted_at.is_(None))
-            .order_by(PaperVersion.version.desc())
-            .first()
-        )
-    
-    if not paper_version:
-        raise HTTPException(status_code=404, detail="Paper version not found")
-    
-    # Query claims
-    query = db.query(Claim).filter(Claim.paper_version_id == paper_version.id)
-    
-    if section:
-        query = query.filter(Claim.section == section)
-    
-    total = query.count()
-    claims = query.order_by(Claim.created_at.desc()).offset(offset).limit(limit).all()
-    
-    return {
-        "aid": aid,
-        "version": paper_version.version,
-        "total": total,
-        "claims": [
-            {
-                "id": str(claim.id),
-                "text": claim.text,
-                "section": claim.section,
-                "confidence": claim.confidence,
-                "created_at": claim.created_at.isoformat(),
-            }
-            for claim in claims
-        ],
-    }
+        if not paper:
+            raise HTTPException(status_code=404, detail="Paper not found")
+        
+        # Get version
+        if version:
+            paper_version = (
+                db.query(PaperVersion)
+                .filter(PaperVersion.aid == aid, PaperVersion.version == version, PaperVersion.deleted_at.is_(None))
+                .first()
+            )
+        else:
+            paper_version = (
+                db.query(PaperVersion)
+                .filter(PaperVersion.aid == aid, PaperVersion.deleted_at.is_(None))
+                .order_by(PaperVersion.version.desc())
+                .first()
+            )
+        
+        if not paper_version:
+            raise HTTPException(status_code=404, detail="Paper version not found")
+        
+        # Query claims
+        query = db.query(Claim).filter(Claim.paper_version_id == paper_version.id)
+        
+        if section:
+            query = query.filter(Claim.section == section)
+        
+        total = query.count()
+        claims = query.order_by(Claim.created_at.desc()).offset(offset).limit(limit).all()
+        
+        return {
+            "aid": aid,
+            "version": paper_version.version,
+            "total": total,
+            "claims": [
+                {
+                    "id": str(claim.id),
+                    "text": claim.text,
+                    "section": claim.section,
+                    "confidence": claim.confidence,
+                    "created_at": claim.created_at.isoformat(),
+                }
+                for claim in claims
+            ],
+        }
     finally:
         db.close()
-
