@@ -153,24 +153,6 @@
 
 **Issues:** Ver seção "Backlog as GitHub Issues" abaixo.
 
-### Sprint 2.1 – Hosting Foundation (v0.2.1) - **KICKOFF**
-
-**Goal:** Fundação para hosting nativo de papers com AID+versionamento, storage por versão, endpoints de ingest, streaming de PDF, geração de thumbnails e páginas hospedadas.
-
-**Definition of Done:**
-- [ ] Sistema AID (Arandu ID) + versionamento implementado
-- [ ] Storage por versão (`/papers/{aid}/v{version}/`)
-- [ ] Endpoints de ingest (`POST /papers`, `POST /papers/{aid}/versions`)
-- [ ] Streaming de PDF (`GET /papers/{aid}/v{version}/pdf`)
-- [ ] Job de geração de thumbnails
-- [ ] Páginas `/p/[aid]` e `/p/[aid]/viewer` com tabs e ScoreCard
-- [ ] Alias `/papers/[id]` => `/p/[aid]`
-- [ ] Migrações para `papers`, `quality_scores`, `claims`, `claim_links`
-- [ ] Testes E2E de hosted page
-- [ ] Docs curtas (hosted-papers.md, quality-score-v0.md, claims-and-refs-v0.md)
-
-**Issues:** #34, #35, #36 (ver abaixo)
-
 ---
 
 ## 6. Backlog Overview
@@ -343,23 +325,6 @@
 - **Labels:** `backend`, `testing`, `must-have`, `sprint-2`
 - **Description:** Criar 3 papers de referência e testar pipeline completo: submissão → claims → citações → checklist → score → artefatos.
 - **Acceptance:** 3 testes end-to-end passando, artefatos válidos, score calculado.
-
-### Sprint 2.1 - Hosting Foundation
-
-**Issue #34: AID+Versionamento e Storage por Versão**
-- **Labels:** `backend`, `database`, `storage`, `must-have`, `sprint-2.1`
-- **Description:** Implementar sistema AID (Arandu ID) único por paper, versionamento (v1, v2, ...), storage por versão em `PAPERS_BASE/{aid}/v{version}/`. Migrações para tabelas `papers` (id, aid, current_version, title, arxiv_id, repo_url, pdf_path, approved_public, created_at) e `paper_versions` (id, paper_id FK, version, pdf_path, thumbnail_path, created_at).
-- **Acceptance:** AID gerado automaticamente, versões incrementam, storage organizado por versão, migrações aplicadas.
-
-**Issue #35: APIs de Ingest e Streaming de PDF**
-- **Labels:** `backend`, `api`, `must-have`, `sprint-2.1`
-- **Description:** Implementar `POST /papers` (metadata + upload/link PDF), `POST /papers/{aid}/versions` (nova versão), `GET /papers/{aid}` (dados completos), `GET /papers/{aid}/v{version}/pdf` (streaming), `PATCH /papers/{aid}/visibility` (aprovação). Job de thumbnail generation via RQ.
-- **Acceptance:** Upload funciona, streaming de PDF eficiente, thumbnails gerados, aprovação persiste.
-
-**Issue #36: UI Hosted Pages e Alias**
-- **Labels:** `frontend`, `ui`, `must-have`, `sprint-2.1`
-- **Description:** Implementar `/p/[aid]` (página principal com ScoreCard, tabs Overview/Claims/Score/Viewer), `/p/[aid]/viewer` (PDF viewer com tabs), alias `/papers/[id]` => `/p/[aid]`. Componentes: PDFViewer (pdf.js), ScoreCard, tabs, badge interno.
-- **Acceptance:** Páginas renderizam corretamente, PDF viewer funcional, tabs navegáveis, alias funciona, badge interno visível.
 
 ### NICE-TO-HAVE (Post-MVP)
 

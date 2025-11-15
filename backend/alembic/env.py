@@ -9,7 +9,18 @@ from alembic import context
 
 # Import base and models
 from app.db.base import Base
-from app.models import Job, Run, Artifact, Review  # noqa: F401
+from app.models import (  # noqa: F401
+    Job,
+    Run,
+    Artifact,
+    Review,
+    Paper,
+    PaperVersion,
+    PaperExternalId,
+    QualityScore,
+    Claim,
+    ClaimLink,
+)
 
 # this is the Alembic Config object
 config = context.config
