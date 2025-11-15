@@ -24,6 +24,8 @@ def ingestion_node(state: ReviewState) -> ReviewState:
     """
     Ingestion node: PDF/URL parsing, metadata extraction.
 
+    If paper_text is already provided, skip ingestion and just set metadata.
+
     Args:
         state: Review state
 
@@ -33,6 +35,23 @@ def ingestion_node(state: ReviewState) -> ReviewState:
     try:
         logger.info(f"Ingestion node: processing review {state['review_id']}")
 
+        # If paper_text is already provided, skip ingestion
+        if state.get("paper_text") and not (state.get("url") or state.get("doi") or state.get("pdf_file_path")):
+            logger.info("Paper text already provided, skipping ingestion")
+            # Set minimal metadata if not present
+            if not state.get("paper_meta"):
+                return {
+                    "paper_meta": {
+                        "title": "Test Paper",
+                        "authors": [],
+                        "venue": "Test",
+                        "published_at": None,
+                    },
+                    "status": "processing",
+                }
+            return {"status": "processing"}
+
+        # Otherwise, try to ingest from URL/DOI/PDF
         paper_meta = ingest_paper(
             url=state.get("url"),
             doi=state.get("doi"),
@@ -51,11 +70,28 @@ def ingestion_node(state: ReviewState) -> ReviewState:
         logger.info(f"Ingestion completed: {len(paper_meta.text)} characters extracted")
     except Exception as e:
         logger.error(f"Ingestion failed: {e}")
-        state["status"] = "failed"
-        state["error_message"] = f"Ingestion failed: {str(e)}"
-        state["errors"].append({"step": "ingestion", "message": str(e)})
+        # If paper_text is available, continue anyway
+        if state.get("paper_text"):
+            logger.warning("Ingestion failed but paper_text available, continuing")
+            if not state.get("paper_meta"):
+                return {
+                    "paper_meta": {
+                        "title": "Unknown",
+                        "authors": [],
+                        "venue": "Unknown",
+                        "published_at": None,
+                    },
+                    "status": "processing",
+                }
+            return {"status": "processing"}
+        else:
+            return {
+                "status": "failed",
+                "error_message": f"Ingestion failed: {str(e)}",
+                "errors": [{"step": "ingestion", "message": str(e)}],
+            }
 
-    return state
+    return {}
 
 
 def claim_extraction_node(state: ReviewState) -> ReviewState:
@@ -84,6 +120,7 @@ def claim_extraction_node(state: ReviewState) -> ReviewState:
         logger.error(f"Claim extraction failed: {e}")
         state["errors"].append({"step": "claim_extraction", "message": str(e)})
         # Don't fail completely, continue with empty claims
+        state["claims"] = []
 
     return state
 
@@ -169,8 +206,7 @@ def checklist_generation_node(state: ReviewState) -> ReviewState:
 
         if not state.get("paper_text"):
             logger.warning("No paper text available for checklist")
-            state["checklist"] = {"items": [], "summary": "No data available"}
-            return state
+            return {"checklist": {"items": [], "summary": "No data available"}}
 
         # Get repo path if available
         repo_path = None
@@ -199,15 +235,15 @@ def checklist_generation_node(state: ReviewState) -> ReviewState:
         )
 
         checklist_json = checklist_to_json(checklist)
-        state["checklist"] = checklist_json
 
         logger.info(f"Checklist generation completed: {checklist.summary}")
+        return {"checklist": checklist_json}
     except Exception as e:
         logger.error(f"Checklist generation failed: {e}")
-        state["errors"].append({"step": "checklist_generation", "message": str(e)})
-        state["checklist"] = {"items": [], "summary": "Generation failed"}
-
-    return state
+        return {
+            "checklist": {"items": [], "summary": "Generation failed"},
+            "errors": [{"step": "checklist_generation", "message": str(e)}],
+        }
 
 
 def quality_score_node(state: ReviewState) -> ReviewState:
@@ -325,15 +361,14 @@ def badge_generation_node(state: ReviewState) -> ReviewState:
             "citations_augmented": compute_badge_status("citations-augmented", review_data),
         }
 
-        state["badges"] = badges_status
-
         logger.info(f"Badge generation completed: {badges_status}")
+        return {"badges": badges_status}
     except Exception as e:
         logger.error(f"Badge generation failed: {e}")
-        state["errors"].append({"step": "badge_generation", "message": str(e)})
-        state["badges"] = {}
-
-    return state
+        return {
+            "badges": {},
+            "errors": [{"step": "badge_generation", "message": str(e)}],
+        }
 
 
 def report_generation_node(state: ReviewState) -> ReviewState:
@@ -381,16 +416,17 @@ def report_generation_node(state: ReviewState) -> ReviewState:
         generate_html_report(review_data, html_path)
         generate_json_report(review_data, json_path)
 
-        state["html_report_path"] = str(html_path)
-        state["json_summary_path"] = str(json_path)
-        state["status"] = "completed"
-
         logger.info("Report generation completed")
+        return {
+            "html_report_path": str(html_path),
+            "json_summary_path": str(json_path),
+            "status": "completed",
+        }
     except Exception as e:
         logger.error(f"Report generation failed: {e}")
-        state["status"] = "failed"
-        state["error_message"] = f"Report generation failed: {str(e)}"
-        state["errors"].append({"step": "report_generation", "message": str(e)})
-
-    return state
+        return {
+            "status": "failed",
+            "error_message": f"Report generation failed: {str(e)}",
+            "errors": [{"step": "report_generation", "message": str(e)}],
+        }
 
