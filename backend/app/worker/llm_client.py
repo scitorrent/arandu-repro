@@ -32,13 +32,23 @@ def get_llm_client():
     """
     Get configured Gemini LLM client.
 
-    Tries Vertex AI first (if GOOGLE_APPLICATION_CREDENTIALS is set),
-    then falls back to API key authentication.
+    Tries API key first (direct Gemini API), then falls back to Vertex AI
+    if GOOGLE_APPLICATION_CREDENTIALS is set.
 
     Returns:
         Configured model client or None if not available
     """
-    # Try Vertex AI first (preferred for production)
+    # Try API key first (direct Gemini API - simpler, no project ID needed)
+    if GEMINI_AVAILABLE and settings.gemini_api_key:
+        try:
+            genai.configure(api_key=settings.gemini_api_key)
+            model = genai.GenerativeModel(settings.gemini_model)
+            logger.info("Using direct Gemini API with API key")
+            return model
+        except Exception as e:
+            logger.warning(f"Direct Gemini API initialization failed: {e}, trying Vertex AI")
+
+    # Fallback to Vertex AI (if credentials available)
     if VERTEX_AI_AVAILABLE and os.getenv("GOOGLE_APPLICATION_CREDENTIALS"):
         try:
             vertexai.init(project=settings.gcp_project_id, location="us-central1")
@@ -46,25 +56,10 @@ def get_llm_client():
             logger.info("Using Vertex AI authentication for Gemini")
             return model
         except Exception as e:
-            logger.warning(f"Vertex AI initialization failed: {e}, trying API key")
+            logger.warning(f"Vertex AI initialization failed: {e}")
 
-    # Fallback to API key
-    if not GEMINI_AVAILABLE:
-        return None
-
-    if not settings.gemini_api_key:
-        logger.warning("GEMINI_API_KEY not set and Vertex AI not available, LLM features disabled")
-        return None
-
-    try:
-        # Configure with API key
-        genai.configure(api_key=settings.gemini_api_key)
-        model = genai.GenerativeModel(settings.gemini_model)
-        logger.info("Using API key authentication for Gemini")
-        return model
-    except Exception as e:
-        logger.error(f"Failed to configure Gemini client: {e}")
-        return None
+    logger.warning("No Gemini authentication available (neither API key nor Vertex AI)")
+    return None
 
 
 def generate_text(prompt: str, temperature: float = 0.3, max_tokens: int = 2000) -> str | None:
@@ -87,14 +82,6 @@ def generate_text(prompt: str, temperature: float = 0.3, max_tokens: int = 2000)
         return None
 
     try:
-        # Check if it's a Vertex AI model (has different API structure)
-        # Vertex AI GenerativeModel has different response structure
-        is_vertex = (
-            hasattr(client, "project")
-            or "vertexai" in str(type(client)).lower()
-            or "GenerativeModel" in str(type(client))
-        )
-
         response = client.generate_content(
             prompt,
             generation_config={
@@ -103,18 +90,16 @@ def generate_text(prompt: str, temperature: float = 0.3, max_tokens: int = 2000)
             },
         )
 
-        if is_vertex:
-            # Vertex AI returns response.candidates[0].content.parts[0].text
-            if hasattr(response, "candidates") and response.candidates:
-                return response.candidates[0].content.parts[0].text
-            elif hasattr(response, "text"):
-                return response.text
-            else:
-                logger.error(f"Unexpected Vertex AI response format: {type(response)}")
-                return None
-        else:
-            # Standard google-generativeai (API key)
+        # Check if it's a Vertex AI model (has different API structure)
+        # Direct Gemini API returns response.text directly
+        if hasattr(response, "text"):
             return response.text
+        # Vertex AI returns response.candidates[0].content.parts[0].text
+        elif hasattr(response, "candidates") and response.candidates:
+            return response.candidates[0].content.parts[0].text
+        else:
+            logger.error(f"Unexpected response format: {type(response)}")
+            return None
     except Exception as e:
         logger.error(f"LLM generation failed: {e}")
         # Log more details for debugging
