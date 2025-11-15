@@ -1,7 +1,15 @@
 """Pydantic schemas."""
 
-from app.schemas.job import Job, JobCreate, JobUpdate
-from app.schemas.review import Review, ReviewCreate, ReviewUpdate
+# Import existing schemas if they exist
+try:
+    from app.schemas.job import Job, JobCreate, JobUpdate
+except ImportError:
+    pass
+
+try:
+    from app.schemas.review import Review, ReviewCreate, ReviewUpdate
+except ImportError:
+    pass
 from app.schemas.paper import (
     Paper,
     PaperCreate,
@@ -26,12 +34,6 @@ from app.schemas.claim import Claim, ClaimCreate
 from app.schemas.claim_link import ClaimLink, ClaimLinkCreate
 
 __all__ = [
-    "Job",
-    "JobCreate",
-    "JobUpdate",
-    "Review",
-    "ReviewCreate",
-    "ReviewUpdate",
     "Paper",
     "PaperCreate",
     "PaperUpdate",
@@ -52,3 +54,14 @@ __all__ = [
     "ClaimLink",
     "ClaimLinkCreate",
 ]
+
+# Add existing schemas if available
+try:
+    __all__.extend(["Job", "JobCreate", "JobUpdate"])
+except NameError:
+    pass
+
+try:
+    __all__.extend(["Review", "ReviewCreate", "ReviewUpdate"])
+except NameError:
+    pass
