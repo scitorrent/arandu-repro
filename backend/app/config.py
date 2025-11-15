@@ -43,6 +43,7 @@ class Settings(BaseSettings):
     api_base_url: str = "http://localhost:8000"
 
     # Review MVP settings
+    reviews_base_path: Path = Path("/var/arandu/reviews")  # Storage for review artifacts
     max_pdf_size_mb: int = 25
     review_timeout_seconds: int = 90
     rag_enabled: bool = True

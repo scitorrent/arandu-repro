@@ -259,8 +259,36 @@ def process_review(review_id: str) -> None:
                     status="processing",
                 )
 
-            # TODO: Step 7 (Reports)
-            # For now, mark as completed after badges
+            # Step 7: Report generation
+            with log_step(review_id, "report_generation", review_id=review_id):
+                # Build complete review data
+                review_data = build_review_data(review)
+
+                # Generate reports
+                reports_dir = Path(settings.reviews_base_path) / str(review.id)
+                reports_dir.mkdir(parents=True, exist_ok=True)
+
+                html_path = reports_dir / "report.html"
+                json_path = reports_dir / "review.json"
+
+                generate_html_report(review_data, html_path)
+                generate_json_report(review_data, json_path)
+
+                # Update review with report paths
+                review.html_report_path = str(html_path)
+                review.json_summary_path = str(json_path)
+                db.commit()
+
+                log_event(
+                    logging.INFO,
+                    "Generated HTML and JSON reports",
+                    job_id=review_id,
+                    step="report_generation",
+                    event="reports_generated",
+                    status="processing",
+                )
+
+            # All steps complete
             review.status = ReviewStatus.COMPLETED
             db.commit()
 
