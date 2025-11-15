@@ -9,6 +9,8 @@ from sqlalchemy.orm import Session
 from app.db.session import SessionLocal
 from app.models.review import Review, ReviewStatus
 from app.utils.logging import log_event, log_step
+from app.worker.claim_extractor import claims_to_json, extract_claims_by_section
+from app.worker.review_ingestion import ingest_paper
 
 logger = logging.getLogger(__name__)
 
@@ -48,16 +50,50 @@ def process_review(review_id: str) -> None:
 
     try:
         with log_step(review_id, "process_review", review_id=review_id):
-            # TODO: Implement pipeline steps
-            # 1. Ingestion
-            # 2. Claim extraction
-            # 3. Citation suggestion
-            # 4. Method checklist
-            # 5. Quality score
-            # 6. Badges
-            # 7. Report generation
+            # Step 1: Ingestion (PDF/URL parsing, metadata extraction)
+            with log_step(review_id, "ingestion", review_id=review_id):
+                paper_meta = ingest_paper(
+                    url=review.url,
+                    doi=review.doi,
+                    pdf_path=review.pdf_file_path,
+                )
 
-            # Placeholder: mark as completed
+                # Update review with metadata and text
+                review.paper_title = paper_meta.title
+                review.paper_authors = paper_meta.authors
+                review.paper_venue = paper_meta.venue
+                review.paper_published_at = paper_meta.published_at
+                review.paper_text = paper_meta.text
+                db.commit()
+
+                log_event(
+                    logging.INFO,
+                    "Paper ingested",
+                    job_id=review_id,
+                    step="ingestion",
+                    event="ingestion_completed",
+                    status="processing",
+                )
+
+            # Step 2: Claim extraction
+            with log_step(review_id, "claim_extraction", review_id=review_id):
+                claims = extract_claims_by_section(paper_meta.text)
+                claims_json = claims_to_json(claims)
+
+                review.claims = claims_json
+                db.commit()
+
+                log_event(
+                    logging.INFO,
+                    f"Extracted {len(claims)} claims",
+                    job_id=review_id,
+                    step="claim_extraction",
+                    event="claims_extracted",
+                    status="processing",
+                )
+
+            # TODO: Steps 3-7 (Citations, Checklist, Quality Score, Badges, Reports)
+            # For now, mark as completed after claims extraction
             review.status = ReviewStatus.COMPLETED
             db.commit()
 
