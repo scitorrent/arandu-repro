@@ -104,6 +104,10 @@ services:
       timeout: 10s
       retries: 3
 
+networks:
+  arandu-network:
+    driver: bridge
+
 volumes:
   postgres_data:
   artifacts:
