@@ -22,6 +22,9 @@ from app.models import (  # noqa: F401
     ClaimLink,
 )
 
+# Ensure pg_trgm extension is available (PostgreSQL only)
+# This is handled by migration g7h8i9j0k1l2_enable_pg_trgm
+
 # this is the Alembic Config object
 config = context.config
 
