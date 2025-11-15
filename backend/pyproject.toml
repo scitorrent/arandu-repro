@@ -17,6 +17,11 @@ dependencies = [
     "pyyaml>=6.0.1",
     "tomli>=2.0.1",
     "docker>=6.1.0",
+    "pymupdf>=1.23.0",  # PDF parsing
+    "sentence-transformers>=2.2.0",  # Embeddings for RAG
+    "whoosh>=2.7.4",  # BM25 search
+    "scikit-learn>=1.3.0",  # ML models
+    "shap>=0.43.0",  # SHAP explanations
 ]
 
 [project.optional-dependencies]
