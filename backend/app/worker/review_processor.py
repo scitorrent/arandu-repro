@@ -59,10 +59,12 @@ def process_review(review_id: str) -> None:
                 )
 
                 # Update review with metadata and text
-                review.paper_title = paper_meta.title
-                review.paper_authors = paper_meta.authors
-                review.paper_venue = paper_meta.venue
-                review.paper_published_at = paper_meta.published_at
+                review.paper_meta = {
+                    "title": paper_meta.title,
+                    "authors": paper_meta.authors,
+                    "venue": paper_meta.venue,
+                    "published_at": paper_meta.published_at,
+                }
                 review.paper_text = paper_meta.text
                 db.commit()
 
