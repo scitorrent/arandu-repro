@@ -33,6 +33,7 @@ def upgrade() -> None:
         sa.Column('confidence', sa.Float(), nullable=True),
         sa.Column('extraction_model_version', sa.String(length=50), nullable=True),
         sa.Column('hash', sa.String(length=64), nullable=False),
+        sa.Column('text_hash', sa.String(length=64), nullable=True),  # Hash do documento base
         sa.Column('created_at', sa.DateTime(timezone=True), nullable=False),
         sa.ForeignKeyConstraint(['paper_version_id'], ['paper_versions.id'], ondelete='CASCADE'),
         sa.ForeignKeyConstraint(['paper_id'], ['papers.id'], ondelete='CASCADE'),
@@ -51,10 +52,18 @@ def upgrade() -> None:
     
     op.create_index('idx_claims_paper_version_id', 'claims', ['paper_version_id'])
     op.create_index('idx_claims_paper_version_section', 'claims', ['paper_version_id', 'section'])
+    op.create_index('idx_claims_paper_version_section_created', 'claims', ['paper_version_id', 'section', sa.text('created_at DESC')])
     op.create_index('idx_claims_paper_id', 'claims', ['paper_id'])
     op.create_index('idx_claims_section', 'claims', ['section'])
     op.create_index('idx_claims_hash', 'claims', ['hash'], unique=True)
     op.create_index('idx_claims_created_at', 'claims', ['created_at'])
+    op.create_index('idx_claims_text_hash', 'claims', ['text_hash'])
+    
+    # Create GIN index for full-text search (PostgreSQL only)
+    op.execute("""
+        CREATE INDEX IF NOT EXISTS idx_claims_text_gin 
+        ON claims USING gin(to_tsvector('english', text));
+    """)
 
 
 def downgrade() -> None:

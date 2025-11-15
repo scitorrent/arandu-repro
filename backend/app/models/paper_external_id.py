@@ -2,7 +2,6 @@
 
 import uuid
 from datetime import UTC, datetime
-from enum import Enum
 
 from sqlalchemy import Column, DateTime, ForeignKey, Index, String
 from sqlalchemy import Enum as SQLEnum
@@ -11,15 +10,7 @@ from sqlalchemy.orm import relationship
 from sqlalchemy.schema import UniqueConstraint
 
 from app.db.base import Base
-
-
-class ExternalIdKind(str, Enum):
-    """External ID kind enumeration."""
-
-    DOI = "doi"
-    ARXIV = "arxiv"
-    PMID = "pmid"
-    URL = "url"
+from app.models.enums import ExternalIdKind
 
 
 class PaperExternalId(Base):

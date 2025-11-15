@@ -6,14 +6,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, Field
 
-
-class ExternalIdKind(str, Enum):
-    """External ID kind enumeration."""
-
-    DOI = "doi"
-    ARXIV = "arxiv"
-    PMID = "pmid"
-    URL = "url"
+from app.models.enums import ExternalIdKind
 
 
 class PaperExternalIdBase(BaseModel):

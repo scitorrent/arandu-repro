@@ -12,8 +12,9 @@ class ClaimBase(BaseModel):
     """Base claim schema."""
 
     text: str = Field(..., max_length=5000)
-    span_start: Optional[int] = None
-    span_end: Optional[int] = None
+    span_start: Optional[int] = None  # Inclusive start [start, end)
+    span_end: Optional[int] = None  # Exclusive end [start, end)
+    text_hash: Optional[str] = Field(None, max_length=64)  # Hash do documento base
     page: Optional[int] = None
     bbox: Optional[Dict[str, Any]] = None  # {x, y, width, height}
     section: Optional[str] = Field(None, max_length=100)

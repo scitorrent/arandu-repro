@@ -2,7 +2,6 @@
 
 import uuid
 from datetime import UTC, datetime
-from enum import Enum
 
 from sqlalchemy import CheckConstraint, Column, DateTime, Index, String
 from sqlalchemy import Enum as SQLEnum
@@ -10,14 +9,7 @@ from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 
 from app.db.base import Base
-
-
-class PaperVisibility(str, Enum):
-    """Paper visibility enumeration."""
-
-    PRIVATE = "private"
-    UNLISTED = "unlisted"
-    PUBLIC = "public"
+from app.models.enums import PaperVisibility
 
 
 class Paper(Base):

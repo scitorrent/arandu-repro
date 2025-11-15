@@ -50,6 +50,7 @@ def upgrade() -> None:
     op.create_index('idx_quality_scores_scope', 'quality_scores', ['scope'])
     op.create_index('idx_quality_scores_created_at', 'quality_scores', ['created_at'])
     op.create_index('idx_quality_scores_score', 'quality_scores', ['score'])
+    op.create_index('idx_quality_scores_score_created', 'quality_scores', [sa.text('score DESC'), sa.text('created_at DESC')])
 
 
 def downgrade() -> None:

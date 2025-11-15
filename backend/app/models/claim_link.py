@@ -2,7 +2,6 @@
 
 import uuid
 from datetime import UTC, datetime
-from enum import Enum
 
 from sqlalchemy import CheckConstraint, Column, DateTime, ForeignKey, Float, Index, String
 from sqlalchemy import Enum as SQLEnum
@@ -10,15 +9,7 @@ from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 
 from app.db.base import Base
-
-
-class ClaimRelation(str, Enum):
-    """Claim relation enumeration."""
-
-    EQUIVALENT = "equivalent"
-    COMPLEMENTARY = "complementary"
-    CONTRADICTORY = "contradictory"
-    UNCLEAR = "unclear"
+from app.models.enums import ClaimRelation
 
 
 class ClaimLink(Base):

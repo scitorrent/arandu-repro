@@ -40,14 +40,15 @@ class Claim(Base):
         index=True,
     )  # Para join rápido
     text = Column(String(5000), nullable=False)
-    span_start = Column(Integer, nullable=True)
-    span_end = Column(Integer, nullable=True)
+    span_start = Column(Integer, nullable=True)  # Inclusive start [start, end)
+    span_end = Column(Integer, nullable=True)  # Exclusive end [start, end)
     page = Column(Integer, nullable=True)  # Página do PDF
     bbox = Column(JSON, nullable=True)  # Bounding box {x, y, width, height}
     section = Column(String(100), nullable=True, index=True)
     confidence = Column(Float, nullable=True)
     extraction_model_version = Column(String(50), nullable=True)
     hash = Column(String(64), unique=True, nullable=False)  # Hash para dedupe
+    text_hash = Column(String(64), nullable=True)  # Hash do documento base usado para extrair spans (evita drift)
     created_at = Column(
         DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False, index=True
     )
@@ -70,10 +71,12 @@ class Claim(Base):
         UniqueConstraint("hash", name="uq_claims_hash"),
         Index("idx_claims_paper_version_id", "paper_version_id"),
         Index("idx_claims_paper_version_section", "paper_version_id", "section"),
+        Index("idx_claims_paper_version_section_created", "paper_version_id", "section", "created_at"),
         Index("idx_claims_paper_id", "paper_id"),
         Index("idx_claims_section", "section"),
         Index("idx_claims_hash", "hash", unique=True),
         Index("idx_claims_created_at", "created_at"),
+        Index("idx_claims_text_hash", "text_hash"),  # Para verificar drift
         # GIN/trigram em text (PostgreSQL) - adicionar via migration separada se necessário
     )
 
