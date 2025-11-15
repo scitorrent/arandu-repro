@@ -176,8 +176,62 @@ def process_review(review_id: str) -> None:
                     status="processing",
                 )
 
-            # TODO: Steps 5-7 (Quality Score, Badges, Reports)
-            # For now, mark as completed after checklist
+            # Step 5: Quality Score + SHAP
+            with log_step(review_id, "quality_score", review_id=review_id):
+                # Build features
+                features_obj = build_features(
+                    claim_objects if review.claims else [],
+                    paper_meta.text,
+                    checklist,
+                    citations_by_claim if review.citations else None,
+                    repo_path=repo_path,
+                )
+
+                features_dict = features_to_dict(features_obj)
+
+                # Predict score
+                score_result = predict_quality_score(features_dict)
+
+                # Generate SHAP explanations
+                shap_explanations = explain_with_shap(features_dict, score_result["score"])
+
+                # Generate narrative
+                narrative = generate_narrative(
+                    score_result["score"],
+                    score_result["tier"],
+                    shap_to_json(shap_explanations),
+                    checklist_json,
+                    review.claims or [],
+                    paper_meta={
+                        "title": paper_meta.title,
+                        "authors": paper_meta.authors,
+                        "venue": paper_meta.venue,
+                    },
+                )
+
+                # Store quality score
+                review.quality_score = {
+                    "value_0_100": score_result["score"],
+                    "tier": score_result["tier"],
+                    "version": score_result["version"],
+                    "model_type": score_result["model_type"],
+                    "features": features_dict,
+                    "shap": shap_to_json(shap_explanations),
+                    "narrative": narrative,
+                }
+                db.commit()
+
+                log_event(
+                    logging.INFO,
+                    f"Quality score: {score_result['score']:.1f} (Tier {score_result['tier']})",
+                    job_id=review_id,
+                    step="quality_score",
+                    event="quality_score_computed",
+                    status="processing",
+                )
+
+            # TODO: Steps 6-7 (Badges, Reports)
+            # For now, mark as completed after quality score
             review.status = ReviewStatus.COMPLETED
             db.commit()
 
