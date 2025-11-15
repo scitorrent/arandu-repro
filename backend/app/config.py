@@ -49,6 +49,10 @@ class Settings(BaseSettings):
     arxiv_enabled: bool = True
     crossref_enabled: bool = True
     crossref_mailto: str = "contact@arandu.org"  # For Crossref API
+    rag_embedding_model: str = "all-MiniLM-L6-v2"  # Embedding model for RAG
+    rag_dense_weight: float = 0.5  # Weight for dense search in hybrid (1-alpha for BM25)
+    rag_top_k: int = 5  # Number of citations to return per claim
+    rag_min_score: float = 0.3  # Minimum score threshold
 
     class Config:
         env_file = ".env"

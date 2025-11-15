@@ -92,8 +92,64 @@ def process_review(review_id: str) -> None:
                     status="processing",
                 )
 
-            # TODO: Steps 3-7 (Citations, Checklist, Quality Score, Badges, Reports)
-            # For now, mark as completed after claims extraction
+            # Step 3: Citation suggestion (RAG)
+            with log_step(review_id, "citation_suggestion", review_id=review_id):
+                if review.claims:
+                    # Convert claims JSON back to Claim objects for processing
+                    claim_objects = [
+                        Claim(
+                            id=c["id"],
+                            text=c["text"],
+                            section=c.get("section"),
+                            spans=c.get("spans", []),
+                            confidence=c.get("confidence", 0.0),
+                        )
+                        for c in review.claims
+                    ]
+
+                    citations_by_claim = suggest_citations_for_claims(
+                        claim_objects,
+                        paper_meta.text,
+                        paper_meta={
+                            "title": paper_meta.title,
+                            "authors": paper_meta.authors,
+                            "venue": paper_meta.venue,
+                        },
+                    )
+
+                    # Convert to JSON-serializable format
+                    citations_json = {
+                        claim_id: [
+                            {
+                                "title": cit.title,
+                                "authors": cit.authors,
+                                "venue": cit.venue,
+                                "year": cit.year,
+                                "doi": cit.doi,
+                                "url": cit.url,
+                                "score_final": cit.score_final,
+                                "score_rerank": cit.score_rerank,
+                                "justification": cit.justification,
+                            }
+                            for cit in citations
+                        ]
+                        for claim_id, citations in citations_by_claim.items()
+                    }
+
+                    review.citations = citations_json
+                    db.commit()
+
+                    log_event(
+                        logging.INFO,
+                        f"Suggested citations for {len(claim_objects)} claims",
+                        job_id=review_id,
+                        step="citation_suggestion",
+                        event="citations_suggested",
+                        status="processing",
+                    )
+
+            # TODO: Steps 4-7 (Checklist, Quality Score, Badges, Reports)
+            # For now, mark as completed after citations
             review.status = ReviewStatus.COMPLETED
             db.commit()
 
