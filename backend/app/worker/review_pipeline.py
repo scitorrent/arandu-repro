@@ -51,13 +51,16 @@ def create_review_pipeline():
     workflow.add_node("badge_generation", badge_generation_node)
     workflow.add_node("report_generation", report_generation_node)
 
-    # Add edges
+    # Add edges (define execution flow)
     workflow.set_entry_point("ingestion")
     workflow.add_edge("ingestion", "claim_extraction")
+    # Both citation_suggestion and checklist_generation can run in parallel after claim_extraction
     workflow.add_edge("claim_extraction", "citation_suggestion")
     workflow.add_edge("claim_extraction", "checklist_generation")
+    # Quality score needs both citations and checklist
     workflow.add_edge("citation_suggestion", "quality_score")
     workflow.add_edge("checklist_generation", "quality_score")
+    # Sequential: quality_score → badge_generation → report_generation
     workflow.add_edge("quality_score", "badge_generation")
     workflow.add_edge("badge_generation", "report_generation")
     workflow.add_edge("report_generation", END)
