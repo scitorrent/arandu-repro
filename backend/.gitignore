@@ -45,6 +45,12 @@ htmlcov/
 .env.local
 .env.*.local
 
+# GCP credentials
+.gcp/
+*.json
+!package.json
+!tsconfig.json
+
 # Database
 *.db
 *.sqlite

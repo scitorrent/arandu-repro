@@ -1,4 +1,4 @@
-"""LLM client for Gemini API."""
+"""LLM client for Gemini API (supports both API key and Vertex AI)."""
 
 import logging
 import os
@@ -8,7 +8,7 @@ from app.config import settings
 
 logger = logging.getLogger(__name__)
 
-# Try to import google-generativeai
+# Try to import google-generativeai (for API key)
 try:
     import google.generativeai as genai
 
@@ -17,28 +17,50 @@ except ImportError:
     GEMINI_AVAILABLE = False
     logger.warning("google-generativeai not available, LLM features will be disabled")
 
+# Try to import Vertex AI (for service account)
+try:
+    import vertexai
+    from vertexai.generative_models import GenerativeModel
+
+    VERTEX_AI_AVAILABLE = True
+except ImportError:
+    VERTEX_AI_AVAILABLE = False
+    logger.debug("vertexai not available, will use API key only")
+
 
 def get_llm_client():
     """
     Get configured Gemini LLM client.
 
-    Supports API key authentication for Gemini API.
-    For Vertex AI, use GOOGLE_APPLICATION_CREDENTIALS env var.
+    Tries Vertex AI first (if GOOGLE_APPLICATION_CREDENTIALS is set),
+    then falls back to API key authentication.
 
     Returns:
-        Configured genai client or None if not available
+        Configured model client or None if not available
     """
+    # Try Vertex AI first (preferred for production)
+    if VERTEX_AI_AVAILABLE and os.getenv("GOOGLE_APPLICATION_CREDENTIALS"):
+        try:
+            vertexai.init(project=settings.gcp_project_id, location="us-central1")
+            model = GenerativeModel(settings.gemini_model)
+            logger.info("Using Vertex AI authentication for Gemini")
+            return model
+        except Exception as e:
+            logger.warning(f"Vertex AI initialization failed: {e}, trying API key")
+
+    # Fallback to API key
     if not GEMINI_AVAILABLE:
         return None
 
     if not settings.gemini_api_key:
-        logger.warning("GEMINI_API_KEY not set, LLM features disabled")
+        logger.warning("GEMINI_API_KEY not set and Vertex AI not available, LLM features disabled")
         return None
 
     try:
         # Configure with API key
         genai.configure(api_key=settings.gemini_api_key)
         model = genai.GenerativeModel(settings.gemini_model)
+        logger.info("Using API key authentication for Gemini")
         return model
     except Exception as e:
         logger.error(f"Failed to configure Gemini client: {e}")
