@@ -34,11 +34,8 @@ class Review(Base):
     pdf_file_path = Column(String, nullable=True)  # Path to uploaded PDF
     repo_url = Column(String, nullable=True)  # Optional GitHub repo
     
-    # Metadata
-    paper_title = Column(String, nullable=True)
-    paper_authors = Column(JSON, nullable=True)  # List of authors
-    paper_venue = Column(String, nullable=True)
-    paper_published_at = Column(String, nullable=True)  # ISO date string
+    # Metadata (stored as JSON for flexibility)
+    paper_meta = Column(JSON, nullable=True)  # {title, authors, venue, published_at}
     
     # State
     status = Column(SQLEnum(ReviewStatus), nullable=False, default=ReviewStatus.PENDING)
