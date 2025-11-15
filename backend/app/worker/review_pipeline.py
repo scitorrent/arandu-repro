@@ -42,12 +42,12 @@ def create_review_pipeline():
     # Create graph
     workflow = StateGraph(ReviewState)
 
-    # Add nodes
+    # Add nodes (use different names than state keys to avoid conflicts)
     workflow.add_node("ingestion", ingestion_node)
     workflow.add_node("claim_extraction", claim_extraction_node)
     workflow.add_node("citation_suggestion", citation_suggestion_node)
     workflow.add_node("checklist_generation", checklist_generation_node)
-    workflow.add_node("quality_score", quality_score_node)
+    workflow.add_node("quality_score_compute", quality_score_node)  # Renamed to avoid state key conflict
     workflow.add_node("badge_generation", badge_generation_node)
     workflow.add_node("report_generation", report_generation_node)
 
@@ -58,10 +58,10 @@ def create_review_pipeline():
     workflow.add_edge("claim_extraction", "citation_suggestion")
     workflow.add_edge("claim_extraction", "checklist_generation")
     # Quality score needs both citations and checklist
-    workflow.add_edge("citation_suggestion", "quality_score")
-    workflow.add_edge("checklist_generation", "quality_score")
-    # Sequential: quality_score → badge_generation → report_generation
-    workflow.add_edge("quality_score", "badge_generation")
+    workflow.add_edge("citation_suggestion", "quality_score_compute")
+    workflow.add_edge("checklist_generation", "quality_score_compute")
+    # Sequential: quality_score_compute → badge_generation → report_generation
+    workflow.add_edge("quality_score_compute", "badge_generation")
     workflow.add_edge("badge_generation", "report_generation")
     workflow.add_edge("report_generation", END)
 
