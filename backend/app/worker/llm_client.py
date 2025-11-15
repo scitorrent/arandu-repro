@@ -59,16 +59,31 @@ def generate_text(prompt: str, temperature: float = 0.3, max_tokens: int = 2000)
         return None
 
     try:
-        response = client.generate_content(
-            prompt,
-            generation_config={
-                "temperature": temperature,
-                "max_output_tokens": max_tokens,
-            },
-        )
-        return response.text
+        # Handle both standard genai and Vertex AI models
+        if hasattr(client, "generate_content"):
+            # Standard google-generativeai
+            response = client.generate_content(
+                prompt,
+                generation_config={
+                    "temperature": temperature,
+                    "max_output_tokens": max_tokens,
+                },
+            )
+            return response.text
+        else:
+            # Vertex AI (different API)
+            response = client.generate_content(
+                prompt,
+                generation_config={
+                    "temperature": temperature,
+                    "max_output_tokens": max_tokens,
+                },
+            )
+            return response.text
     except Exception as e:
         logger.error(f"LLM generation failed: {e}")
+        # Log more details for debugging
+        logger.debug(f"Error type: {type(e).__name__}, Error: {str(e)[:500]}")
         return None
 
 

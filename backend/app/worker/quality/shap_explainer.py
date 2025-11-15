@@ -1,6 +1,7 @@
 """SHAP explanations for Quality Score."""
 
 import logging
+from dataclasses import dataclass
 from typing import Any
 
 logger = logging.getLogger(__name__)
