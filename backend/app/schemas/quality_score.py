@@ -53,15 +53,24 @@ class QualityScoreCreate(QualityScoreBase):
     paper_id: Optional[UUID] = None
     paper_version_id: Optional[UUID] = None
 
-    @field_validator("paper_id", "paper_version_id")
+    @field_validator("scope")
     @classmethod
     def validate_scope(cls, v, info):
         """Validate scope and required IDs."""
-        scope = info.data.get("scope")
-        if scope == QualityScoreScope.PAPER and not info.data.get("paper_id"):
-            raise ValueError("paper_id required when scope='paper'")
-        if scope == QualityScoreScope.VERSION and not info.data.get("paper_version_id"):
-            raise ValueError("paper_version_id required when scope='version'")
+        scope = v
+        paper_id = info.data.get("paper_id")
+        paper_version_id = info.data.get("paper_version_id")
+        
+        if scope == QualityScoreScope.PAPER:
+            if not paper_id:
+                raise ValueError("paper_id required when scope='paper'")
+            if paper_version_id:
+                raise ValueError("paper_version_id must be None when scope='paper'")
+        elif scope == QualityScoreScope.VERSION:
+            if not paper_version_id:
+                raise ValueError("paper_version_id required when scope='version'")
+            if paper_id:
+                raise ValueError("paper_id must be None when scope='version'")
         return v
 
 
