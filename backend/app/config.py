@@ -1,5 +1,6 @@
 """Application configuration."""
 
+import tempfile
 from pathlib import Path
 
 from pydantic_settings import BaseSettings
@@ -26,9 +27,8 @@ class Settings(BaseSettings):
     max_log_size_bytes: int = 1_000_000  # 1MB
 
     # Storage
-    artifacts_base_path: Path = Path("/var/arandu/artifacts")
-    temp_repos_path: Path = Path("/tmp/arandu/repos")
-    reviews_base_path: Path = Path("/var/arandu/reviews")  # Reviews-specific storage
+    artifacts_base_path: Path = Path(tempfile.gettempdir()) / "arandu" / "artifacts"
+    temp_repos_path: Path = Path(tempfile.gettempdir()) / "arandu" / "repos"
 
     # Security
     docker_user: str = "arandu-user"
@@ -43,9 +43,13 @@ class Settings(BaseSettings):
     api_base_url: str = "http://localhost:8000"
 
     # Review MVP settings
-    reviews_base_path: Path = Path("/var/arandu/reviews")  # Storage for review artifacts
+    reviews_base_path: Path = Path(tempfile.gettempdir()) / "arandu" / "reviews"  # Storage for review artifacts
     max_pdf_size_mb: int = 25
     review_timeout_seconds: int = 90
+    pdf_parsing_timeout_seconds: int = 30
+    
+    # Papers storage
+    papers_base_path: Path = Path(tempfile.gettempdir()) / "arandu" / "papers"
     rag_enabled: bool = True
     arxiv_enabled: bool = True
     crossref_enabled: bool = True

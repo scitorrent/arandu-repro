@@ -50,10 +50,15 @@ def upgrade() -> None:
     op.create_index('idx_quality_scores_scope', 'quality_scores', ['scope'])
     op.create_index('idx_quality_scores_created_at', 'quality_scores', ['created_at'])
     op.create_index('idx_quality_scores_score', 'quality_scores', ['score'])
-    op.create_index('idx_quality_scores_score_created', 'quality_scores', [sa.text('score DESC'), sa.text('created_at DESC')])
+    # Composite index with DESC (PostgreSQL syntax)
+    op.execute("""
+        CREATE INDEX IF NOT EXISTS idx_quality_scores_score_created 
+        ON quality_scores(score DESC, created_at DESC);
+    """)
 
 
 def downgrade() -> None:
+    op.execute("DROP INDEX IF EXISTS idx_quality_scores_score_created;")
     op.drop_index('idx_quality_scores_score', table_name='quality_scores')
     op.drop_index('idx_quality_scores_created_at', table_name='quality_scores')
     op.drop_index('idx_quality_scores_scope', table_name='quality_scores')

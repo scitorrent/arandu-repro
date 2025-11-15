@@ -52,7 +52,11 @@ def upgrade() -> None:
     
     op.create_index('idx_claims_paper_version_id', 'claims', ['paper_version_id'])
     op.create_index('idx_claims_paper_version_section', 'claims', ['paper_version_id', 'section'])
-    op.create_index('idx_claims_paper_version_section_created', 'claims', ['paper_version_id', 'section', sa.text('created_at DESC')])
+    # Composite index with DESC (PostgreSQL syntax)
+    op.execute("""
+        CREATE INDEX IF NOT EXISTS idx_claims_paper_version_section_created 
+        ON claims(paper_version_id, section, created_at DESC);
+    """)
     op.create_index('idx_claims_paper_id', 'claims', ['paper_id'])
     op.create_index('idx_claims_section', 'claims', ['section'])
     op.create_index('idx_claims_hash', 'claims', ['hash'], unique=True)
@@ -67,10 +71,13 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
+    op.execute("DROP INDEX IF EXISTS idx_claims_text_gin;")
+    op.drop_index('idx_claims_text_hash', table_name='claims')
     op.drop_index('idx_claims_created_at', table_name='claims')
     op.drop_index('idx_claims_hash', table_name='claims')
     op.drop_index('idx_claims_section', table_name='claims')
     op.drop_index('idx_claims_paper_id', table_name='claims')
+    op.execute("DROP INDEX IF EXISTS idx_claims_paper_version_section_created;")
     op.drop_index('idx_claims_paper_version_section', table_name='claims')
     op.drop_index('idx_claims_paper_version_id', table_name='claims')
     op.drop_table('claims')
