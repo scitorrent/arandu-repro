@@ -54,7 +54,13 @@ def process_job(job_id: str):
     image_tag: str | None = None
 
     try:
-        log_event(logging.INFO, "Starting job processing", job_id=job_id, step="process_job")
+        log_event(
+            logging.INFO,
+            "Starting job processing",
+            job_id=job_id,
+            step="process_job",
+            event="job_dequeue",
+        )
 
         # Convert job_id to UUID
         job_uuid = UUID(job_id) if isinstance(job_id, str) else job_id
@@ -62,42 +68,103 @@ def process_job(job_id: str):
         # Get job from database
         job = db.query(Job).filter(Job.id == job_uuid).first()
         if not job:
-            log_event(logging.ERROR, "Job not found", job_id=job_id, step="process_job")
+            log_event(
+                logging.ERROR,
+                "Job not found",
+                job_id=job_id,
+                step="process_job",
+                event="job_not_found",
+                status="not_found",
+            )
             return
 
         # Update status to running
-        with log_step(job_id, "status_transition", from_status="pending", to_status="running"):
-            job.status = JobStatus.RUNNING
-            job.updated_at = datetime.now(UTC)
-            db.commit()
-            log_event(
-                logging.INFO,
-                "Job status: pending -> running",
-                job_id=job_id,
-                step="status_transition",
-            )
+        log_event(
+            logging.INFO,
+            "Job status: pending -> running",
+            job_id=job_id,
+            step="status_transition",
+            event="status_change",
+            status="running",
+        )
+        job.status = JobStatus.RUNNING
+        job.updated_at = datetime.now(UTC)
+        db.commit()
 
         # Step 1: Clone repository
+        log_event(
+            logging.INFO,
+            "Starting repository clone",
+            job_id=job_id,
+            step="clone_repo",
+            event="clone_start",
+        )
         repo_path = clone_repo(
             repo_url=job.repo_url,
             target_dir=settings.temp_repos_path / str(job.id),
             job_id=job_id,
         )
+        log_event(
+            logging.INFO,
+            "Repository clone completed",
+            job_id=job_id,
+            step="clone_repo",
+            event="clone_end",
+            status="success",
+        )
 
         # Step 2: Detect environment
+        log_event(
+            logging.INFO,
+            "Starting environment detection",
+            job_id=job_id,
+            step="detect_environment",
+            event="detect_start",
+        )
         env_info = detect_environment(repo_path=repo_path, job_id=job_id)
         job.detected_environment = env_info.to_dict()
         db.commit()
+        log_event(
+            logging.INFO,
+            "Environment detection completed",
+            job_id=job_id,
+            step="detect_environment",
+            event="detect_end",
+            status="success",
+        )
 
         # Step 3: Build Docker image
+        log_event(
+            logging.INFO,
+            "Starting Docker image build",
+            job_id=job_id,
+            step="build_image",
+            event="build_start",
+        )
         image_tag = build_image(
             repo_path=repo_path,
             env_info=env_info,
             job_id=job_id,
         )
+        log_event(
+            logging.INFO,
+            "Docker image build completed",
+            job_id=job_id,
+            step="build_image",
+            event="build_end",
+            status="success",
+        )
 
         # Step 4: Execute command
         command = job.run_command or "python main.py"
+        log_event(
+            logging.INFO,
+            "Starting command execution",
+            job_id=job_id,
+            step="execute_command",
+            event="exec_start",
+            command=command,
+        )
         artifacts_dir = settings.artifacts_base_path / str(job.id)
 
         execution_result = execute_command(

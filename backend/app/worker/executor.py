@@ -84,6 +84,25 @@ def execute_command(
                 str(artifacts_dir): {"bind": "/artifacts", "mode": "rw"},  # Writable artifacts
             }
 
+            # Validate security constraints are set (BEFORE parsing/using them)
+            docker_user_str = str(settings.docker_user or "").strip().lower()
+            docker_user_uid = getattr(settings, "docker_user_uid", None)
+            if (
+                not docker_user_str
+                or docker_user_str == "root"
+                or docker_user_str == "0"
+                or (docker_user_uid is not None and docker_user_uid == 0)
+            ):
+                raise ExecutionError("Security violation: containers must run as non-root user")
+            if settings.docker_cpu_limit <= 0:
+                raise ExecutionError("Security violation: CPU limit must be greater than 0")
+            if not settings.docker_memory_limit or settings.docker_memory_limit.strip() == "":
+                raise ExecutionError("Security violation: memory limit must be set")
+            if settings.docker_network_mode not in ("none", "bridge"):
+                raise ExecutionError(
+                    f"Security violation: invalid network mode '{settings.docker_network_mode}'"
+                )
+
             # Prepare security constraints
             # CPU limit (in nano CPUs: 2.0 cores = 2000000000)
             cpu_quota = int(settings.docker_cpu_limit * 1_000_000_000)
@@ -98,22 +117,30 @@ def execute_command(
                 f"user={settings.docker_user}, "
                 f"cpu={settings.docker_cpu_limit}, "
                 f"memory={settings.docker_memory_limit}, "
-                f"network={settings.docker_network_mode}"
+                f"network={settings.docker_network_mode}, "
+                f"readonly_rootfs={settings.docker_readonly_rootfs}"
             )
 
-            container = client.containers.run(
-                image_tag,
-                command=command,
-                detach=True,
-                user=settings.docker_user,
-                network_mode=settings.docker_network_mode,
-                cpu_quota=cpu_quota,
-                cpu_period=cpu_period,
-                mem_limit=memory_bytes,
-                volumes=volumes,
-                working_dir="/workspace",
-                remove=False,  # Keep container for logs
-            )
+            # Prepare container run arguments
+            run_kwargs = {
+                "image": image_tag,
+                "command": command,
+                "detach": True,
+                "user": settings.docker_user,
+                "network_mode": settings.docker_network_mode,
+                "cpu_quota": cpu_quota,
+                "cpu_period": cpu_period,
+                "mem_limit": memory_bytes,
+                "volumes": volumes,
+                "working_dir": "/workspace",
+                "remove": False,  # Keep container for logs
+            }
+
+            # Add read-only root filesystem if enabled
+            if settings.docker_readonly_rootfs:
+                run_kwargs["read_only"] = True
+
+            container = client.containers.run(**run_kwargs)
 
             # Wait for container with timeout
             try:

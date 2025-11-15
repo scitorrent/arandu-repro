@@ -19,6 +19,10 @@ async def create_job(
     db: Annotated[Session, Depends(get_db)],
 ):
     """Create a new job."""
+    import logging
+
+    from app.utils.logging import log_event
+
     # Create job record
     job = Job(
         repo_url=job_data.repo_url,
@@ -29,6 +33,16 @@ async def create_job(
     db.add(job)
     db.commit()
     db.refresh(job)
+
+    # Log job creation
+    log_event(
+        logging.INFO,
+        "Job created",
+        job_id=str(job.id),
+        step="create_job",
+        event="job_created",
+        status="pending",
+    )
 
     # Enqueue worker task
     try:
