@@ -9,8 +9,8 @@ from sqlalchemy.orm import Session
 from app.db.session import SessionLocal
 from app.models.review import Review, ReviewStatus
 from app.utils.logging import log_event, log_step
-from app.worker.claim_extractor import claims_to_json, extract_claims_by_section
-from app.worker.review_ingestion import ingest_paper
+from app.worker.review_pipeline import create_review_pipeline, run_pipeline_direct
+from app.worker.review_state import ReviewState
 
 logger = logging.getLogger(__name__)
 
@@ -50,8 +50,63 @@ def process_review(review_id: str) -> None:
 
     try:
         with log_step(review_id, "process_review", review_id=review_id):
-            # Step 1: Ingestion (PDF/URL parsing, metadata extraction)
-            with log_step(review_id, "ingestion", review_id=review_id):
+            # Try to use LangGraph pipeline, fallback to direct calls
+            pipeline = create_review_pipeline()
+
+            if pipeline:
+                # Use LangGraph pipeline
+                logger.info(f"Using LangGraph pipeline for review {review_id}")
+                initial_state: ReviewState = {
+                    "review_id": review_id,
+                    "url": review.url,
+                    "doi": review.doi,
+                    "pdf_file_path": review.pdf_file_path,
+                    "repo_url": review.repo_url,
+                    "paper_meta": None,
+                    "paper_text": "",
+                    "claims": None,
+                    "citations": None,
+                    "checklist": None,
+                    "quality_score": None,
+                    "badges": None,
+                    "html_report_path": None,
+                    "json_summary_path": None,
+                    "status": "processing",
+                    "error_message": None,
+                    "errors": [],
+                }
+
+                # Run pipeline
+                final_state = pipeline.invoke(initial_state)
+
+                # Update review from final state
+                review.paper_meta = final_state.get("paper_meta")
+                review.paper_text = final_state.get("paper_text", "")
+                review.claims = final_state.get("claims")
+                review.citations = final_state.get("citations")
+                review.checklist = final_state.get("checklist")
+                review.quality_score = final_state.get("quality_score")
+                review.badges = final_state.get("badges")
+                review.html_report_path = final_state.get("html_report_path")
+                review.json_summary_path = final_state.get("json_summary_path")
+                review.status = ReviewStatus.COMPLETED if final_state.get("status") == "completed" else ReviewStatus.FAILED
+                review.error_message = final_state.get("error_message")
+
+                db.commit()
+
+                log_event(
+                    logging.INFO,
+                    "Review processing completed (LangGraph)",
+                    job_id=review_id,
+                    step="process_review",
+                    event="review_processing_completed",
+                    status=final_state.get("status", "completed"),
+                )
+            else:
+                # Fallback to direct function calls (original implementation)
+                logger.info(f"Using direct function calls for review {review_id}")
+                # Step 1: Ingestion (PDF/URL parsing, metadata extraction)
+                with log_step(review_id, "ingestion", review_id=review_id):
                 paper_meta = ingest_paper(
                     url=review.url,
                     doi=review.doi,

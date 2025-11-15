@@ -24,6 +24,8 @@ dependencies = [
     "whoosh>=2.7.4",  # BM25 search
     "scikit-learn>=1.3.0",  # ML models
     "shap>=0.43.0",  # SHAP explanations
+    "langgraph>=0.0.40",  # LangGraph for agent orchestration (optional)
+    "typing-extensions>=4.8.0",  # For TypedDict compatibility
 ]
 
 [project.optional-dependencies]
