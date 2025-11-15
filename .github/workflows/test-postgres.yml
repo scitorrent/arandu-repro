@@ -55,7 +55,7 @@ jobs:
           DATABASE_URL: postgresql://arandu_test:test_password@localhost:5432/arandu_test
         run: |
           cd backend
-          pytest -q --tb=short tests/
+          pytest -q --tb=short tests/ tests/api/
       
       - name: Test migration rollback
         env:

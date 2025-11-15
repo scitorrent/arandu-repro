@@ -41,6 +41,7 @@ class Settings(BaseSettings):
 
     # API
     api_base_url: str = "http://localhost:8000"
+    web_origin: str = "http://localhost:3000"  # Next.js frontend origin
 
     # Review MVP settings
     reviews_base_path: Path = Path(tempfile.gettempdir()) / "arandu" / "reviews"  # Storage for review artifacts
