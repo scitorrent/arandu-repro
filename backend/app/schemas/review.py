@@ -4,7 +4,7 @@ from datetime import datetime
 from typing import Any
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, model_validator
 
 
 class ReviewCreate(BaseModel):
@@ -25,15 +25,41 @@ class ReviewResponse(BaseModel):
     url: str | None
     doi: str | None
     repo_url: str | None
-    paper_title: str | None
-    paper_authors: list[str] | None
-    paper_venue: str | None
+    paper_title: str | None = None
+    paper_authors: list[str] | None = None
+    paper_venue: str | None = None
     status: str
     created_at: datetime
     updated_at: datetime
     completed_at: datetime | None
 
     model_config = ConfigDict(from_attributes=True)
+
+    @model_validator(mode='before')
+    @classmethod
+    def extract_paper_meta(cls, data: Any) -> Any:
+        """Extract paper metadata from paper_meta JSON field."""
+        # Handle SQLAlchemy model objects
+        if hasattr(data, 'paper_meta') and data.paper_meta and isinstance(data.paper_meta, dict):
+            # Convert SQLAlchemy model to dict for Pydantic
+            if not isinstance(data, dict):
+                # Build dict with all attributes plus extracted paper_meta fields
+                result = {}
+                # Copy all model attributes
+                for key in ['id', 'url', 'doi', 'repo_url', 'status', 'created_at', 'updated_at', 'completed_at']:
+                    if hasattr(data, key):
+                        result[key] = getattr(data, key)
+                # Extract paper_meta fields
+                result['paper_title'] = data.paper_meta.get('title')
+                result['paper_authors'] = data.paper_meta.get('authors')
+                result['paper_venue'] = data.paper_meta.get('venue')
+                return result
+            else:
+                # If it's already a dict, modify it directly
+                data['paper_title'] = data.get('paper_meta', {}).get('title')
+                data['paper_authors'] = data.get('paper_meta', {}).get('authors')
+                data['paper_venue'] = data.get('paper_meta', {}).get('venue')
+        return data
 
 
 class ReviewDetailResponse(ReviewResponse):
