@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 from app.db.session import SessionLocal
 from app.models.review import Review, ReviewStatus
 from app.utils.logging import log_event, log_step
+from app.worker.claim_extractor import Claim
 from app.worker.review_pipeline import create_review_pipeline
 from app.worker.review_state import ReviewState
 
@@ -133,7 +134,7 @@ def process_review(review_id: str) -> None:
                 )
 
             # Step 2: Claim extraction
-            # paper_meta is defined in the else branch above, so it's available here
+            # Note: Uses review.paper_text which is set in both LangGraph and fallback branches
             with log_step(review_id, "claim_extraction", review_id=review_id):
                 claims = extract_claims_by_section(review.paper_text)
                 claims_json = claims_to_json(claims)
