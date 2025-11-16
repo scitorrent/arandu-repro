@@ -58,6 +58,8 @@ def create_review_pipeline():
     workflow.add_edge("claim_extraction", "citation_suggestion")
     workflow.add_edge("claim_extraction", "checklist_generation")
     # Quality score needs both citations and checklist
+    # LangGraph automatically waits for all incoming edges before executing quality_score_compute
+    # This ensures both citation_suggestion and checklist_generation complete before proceeding
     workflow.add_edge("citation_suggestion", "quality_score_compute")
     workflow.add_edge("checklist_generation", "quality_score_compute")
     # Sequential: quality_score_compute → badge_generation → report_generation

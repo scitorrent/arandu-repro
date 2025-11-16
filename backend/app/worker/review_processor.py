@@ -263,7 +263,7 @@ def process_review(review_id: str) -> None:
                     claim_objects,
                     review.paper_text,
                     checklist,
-                    citations_dict,
+                    citations_dict,  # Reconstructed from review.citations or None
                     repo_path=repo_path,
                 )
 
