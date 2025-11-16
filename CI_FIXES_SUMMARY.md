@@ -26,7 +26,12 @@
    - **Fix**: Changed to merge partial updates into full state using `state.update(updates)`
    - **Files**: `backend/app/worker/review_pipeline.py`
 
-### 5. **Ruff lint errors (284 errors found, 268 fixed)**
+### 5. **Migration tests using SQLite instead of PostgreSQL**
+   - **Problem**: Tests were hardcoded to use SQLite, but migrations require PostgreSQL features
+   - **Fix**: Updated `test_db_engine` fixture to use `DATABASE_URL` from environment when available
+   - **Files**: `backend/tests/test_migrations_papers.py`
+
+### 6. **Ruff lint errors (284 errors found, 268 fixed)**
    - **Fixed**:
      - Removed unused imports (ReviewCreate, CheckConstraint, ForeignKey, relationship, etc.)
      - Fixed whitespace in blank lines (W293)
@@ -35,27 +40,39 @@
    - **Remaining**: 8 style errors (N806 - SessionLocal naming convention)
    - **Files**: Multiple test files and model files
 
-### 6. **Section segmenter ambiguous variable**
+### 7. **Section segmenter ambiguous variable**
    - **Problem**: Variable `l` in list comprehension is ambiguous
    - **Fix**: Renamed to `line_item` for clarity
    - **Files**: `backend/app/worker/section_segmenter.py`
 
-## Test Failures Still Occurring
+## Progress Update
 
-### 1. **CHECK constraint failures in SQLite**
-   - **Problem**: Some tests use SQLite in-memory DB which doesn't validate CHECK constraints the same way as PostgreSQL
-   - **Tests affected**: `test_quality_score_scope_*` tests
-   - **Status**: Tests are designed to test constraint validation, but SQLite may not enforce them
+### Latest CI Run Results (after fixes)
+- **PostgreSQL workflow**: 5 failed, 128 passed, 7 skipped (improved from 13 failed!)
+- **CI workflow**: Still failing on lint (8 errors remaining - N806 style issues)
 
-### 2. **Job not found errors**
-   - **Problem**: E2E tests create jobs but worker can't find them (transaction/commit issue)
-   - **Tests affected**: `test_e2e_pipeline.py::test_full_pipeline_with_local_repo`, `test_status_transitions`
-   - **Status**: Needs investigation - may be a test isolation issue
+### Remaining Issues
 
-### 3. **Concurrent test failures**
-   - **Problem**: Concurrent tests failing (may be timing/race condition)
-   - **Tests affected**: `test_concurrent_aid_version_creation`, `test_concurrent_claim_hash_creation`
+1. **Lint errors (8 remaining)**
+   - Mostly N806 (SessionLocal naming convention) - style issue
+   - Can be addressed with `# noqa: N806` or renaming to `session_local`
+   - **Status**: Non-blocking for functionality, but blocks CI
+
+2. **E2E test failures (2 tests)**
+   - `test_full_pipeline_with_local_repo`: Job not found error
+   - `test_status_transitions`: Job not found error
+   - **Root cause**: Transaction isolation - jobs created in test DB not visible to worker
+   - **Status**: Needs investigation of test setup/worker connection
+
+3. **Concurrency test failures (2 tests)**
+   - `test_concurrent_aid_version_creation`: Expected 1 success, got 0
+   - `test_concurrent_claim_hash_creation`: Expected 1 success, got 0
+   - **Root cause**: Timing/race condition in test setup
    - **Status**: May need better synchronization or test isolation
+
+4. **Checklist test failure (1 test)**
+   - `test_check_seeds_fixed_with_mention`: Assertion error
+   - **Status**: Needs investigation of checklist logic
 
 ## Commits Made
 
@@ -63,11 +80,29 @@
 2. `fix: CI issues - migration, lint errors, pipeline state`
 3. `fix: ReviewStatus enum mapping - use lowercase values in DB`
 4. `fix: QualityScoreScope enum mapping - use values_callable`
+5. `fix: migration tests use PostgreSQL when available`
+6. `fix: remaining whitespace and database_url in test_foreign_keys`
+7. `fix: test_foreign_keys use DATABASE_URL`
 
 ## Next Steps
 
-1. Monitor CI runs to verify enum fixes resolved the database errors
-2. Investigate and fix remaining test failures (CHECK constraints, job not found)
-3. Address remaining lint style errors (N806) if blocking CI
-4. Consider adding `workflow_dispatch` trigger to workflows for manual testing
+1. ✅ **Resolved**: Enum mapping issues (ReviewStatus, QualityScoreScope)
+2. ✅ **Resolved**: Migration implementation for reviews table
+3. ✅ **Resolved**: Migration tests now use PostgreSQL when available
+4. ⏳ **In Progress**: Address remaining lint errors (N806 - can use noqa if non-blocking)
+5. ⏳ **Pending**: Fix E2E test transaction isolation
+6. ⏳ **Pending**: Fix concurrency test timing issues
+7. ⏳ **Pending**: Fix checklist assertion error
 
+## Summary
+
+**Major fixes completed:**
+- ✅ Reviews table migration implemented
+- ✅ Enum mapping issues resolved
+- ✅ Pipeline state merging fixed
+- ✅ Migration tests use PostgreSQL in CI
+- ✅ Reduced test failures from 13 to 5
+
+**Remaining work:**
+- 8 lint style errors (N806) - can be suppressed with noqa
+- 5 test failures (E2E, concurrency, checklist) - need investigation
