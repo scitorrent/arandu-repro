@@ -36,7 +36,11 @@ class QualityScore(Base):
         nullable=True,
         index=True,
     )
-    scope = Column(SQLEnum(QualityScoreScope), nullable=False, index=True)
+    scope = Column(
+        SQLEnum(QualityScoreScope, native_enum=False, values_callable=lambda x: [e.value for e in QualityScoreScope]),
+        nullable=False,
+        index=True
+    )
     score = Column(Integer, nullable=False)
     signals = Column(JSON, nullable=False)
     rationale = Column(JSON, nullable=False)
