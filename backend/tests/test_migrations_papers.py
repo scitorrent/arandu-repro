@@ -1,11 +1,12 @@
 """Tests for paper migrations."""
 
+import os
+
 import pytest
 from alembic import command
 from alembic.config import Config
 from sqlalchemy import create_engine, inspect
 from sqlalchemy.pool import StaticPool
-
 
 
 @pytest.fixture(scope="function")
@@ -17,19 +18,30 @@ def alembic_cfg():
 
 @pytest.fixture(scope="function")
 def test_db_engine():
-    """Create in-memory SQLite database for migration testing."""
-    engine = create_engine(
-        "sqlite:///:memory:",
-        connect_args={"check_same_thread": False},
-        poolclass=StaticPool,
-    )
+    """Create database engine for migration testing.
+    
+    Uses PostgreSQL if DATABASE_URL is set, otherwise falls back to SQLite.
+    Note: Some migrations (ENUMs, CHECK constraints) require PostgreSQL.
+    """
+    database_url = os.getenv("DATABASE_URL")
+    if database_url:
+        # Use PostgreSQL from environment (CI)
+        engine = create_engine(database_url)
+    else:
+        # Fallback to SQLite for local testing
+        engine = create_engine(
+            "sqlite:///:memory:",
+            connect_args={"check_same_thread": False},
+            poolclass=StaticPool,
+        )
     return engine
 
 
 def test_papers_table_created(test_db_engine, alembic_cfg):
     """Test that papers table is created."""
-    # Set database URL
-    alembic_cfg.set_main_option("sqlalchemy.url", "sqlite:///:memory:")
+    # Set database URL from engine
+    database_url = os.getenv("DATABASE_URL", "sqlite:///:memory:")
+    alembic_cfg.set_main_option("sqlalchemy.url", database_url)
 
     # Run migrations up to papers
     with test_db_engine.connect() as connection:
@@ -51,7 +63,8 @@ def test_papers_table_created(test_db_engine, alembic_cfg):
 
 def test_paper_versions_table_created(test_db_engine, alembic_cfg):
     """Test that paper_versions table is created."""
-    alembic_cfg.set_main_option("sqlalchemy.url", "sqlite:///:memory:")
+    database_url = os.getenv("DATABASE_URL", "sqlite:///:memory:")
+    alembic_cfg.set_main_option("sqlalchemy.url", database_url)
 
     with test_db_engine.connect() as connection:
         alembic_cfg.attributes["connection"] = connection
@@ -68,7 +81,8 @@ def test_paper_versions_table_created(test_db_engine, alembic_cfg):
 
 def test_paper_external_ids_table_created(test_db_engine, alembic_cfg):
     """Test that paper_external_ids table is created."""
-    alembic_cfg.set_main_option("sqlalchemy.url", "sqlite:///:memory:")
+    database_url = os.getenv("DATABASE_URL", "sqlite:///:memory:")
+    alembic_cfg.set_main_option("sqlalchemy.url", database_url)
 
     with test_db_engine.connect() as connection:
         alembic_cfg.attributes["connection"] = connection
@@ -80,7 +94,8 @@ def test_paper_external_ids_table_created(test_db_engine, alembic_cfg):
 
 def test_quality_scores_table_created(test_db_engine, alembic_cfg):
     """Test that quality_scores table is created."""
-    alembic_cfg.set_main_option("sqlalchemy.url", "sqlite:///:memory:")
+    database_url = os.getenv("DATABASE_URL", "sqlite:///:memory:")
+    alembic_cfg.set_main_option("sqlalchemy.url", database_url)
 
     with test_db_engine.connect() as connection:
         alembic_cfg.attributes["connection"] = connection
@@ -97,7 +112,8 @@ def test_quality_scores_table_created(test_db_engine, alembic_cfg):
 
 def test_claims_table_created(test_db_engine, alembic_cfg):
     """Test that claims table is created."""
-    alembic_cfg.set_main_option("sqlalchemy.url", "sqlite:///:memory:")
+    database_url = os.getenv("DATABASE_URL", "sqlite:///:memory:")
+    alembic_cfg.set_main_option("sqlalchemy.url", database_url)
 
     with test_db_engine.connect() as connection:
         alembic_cfg.attributes["connection"] = connection
@@ -114,7 +130,8 @@ def test_claims_table_created(test_db_engine, alembic_cfg):
 
 def test_claim_links_table_created(test_db_engine, alembic_cfg):
     """Test that claim_links table is created."""
-    alembic_cfg.set_main_option("sqlalchemy.url", "sqlite:///:memory:")
+    database_url = os.getenv("DATABASE_URL", "sqlite:///:memory:")
+    alembic_cfg.set_main_option("sqlalchemy.url", database_url)
 
     with test_db_engine.connect() as connection:
         alembic_cfg.attributes["connection"] = connection
@@ -131,7 +148,8 @@ def test_claim_links_table_created(test_db_engine, alembic_cfg):
 
 def test_all_migrations_reversible(test_db_engine, alembic_cfg):
     """Test that all migrations can be reversed."""
-    alembic_cfg.set_main_option("sqlalchemy.url", "sqlite:///:memory:")
+    database_url = os.getenv("DATABASE_URL", "sqlite:///:memory:")
+    alembic_cfg.set_main_option("sqlalchemy.url", database_url)
 
     with test_db_engine.connect() as connection:
         alembic_cfg.attributes["connection"] = connection
@@ -176,7 +194,8 @@ def test_foreign_keys(test_db_engine, alembic_cfg):
 
 def test_indexes(test_db_engine, alembic_cfg):
     """Test that indexes are created."""
-    alembic_cfg.set_main_option("sqlalchemy.url", "sqlite:///:memory:")
+    database_url = os.getenv("DATABASE_URL", "sqlite:///:memory:")
+    alembic_cfg.set_main_option("sqlalchemy.url", database_url)
 
     with test_db_engine.connect() as connection:
         alembic_cfg.attributes["connection"] = connection
