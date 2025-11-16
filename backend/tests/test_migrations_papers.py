@@ -19,7 +19,7 @@ def alembic_cfg():
 @pytest.fixture(scope="function")
 def test_db_engine():
     """Create database engine for migration testing.
-    
+
     Uses PostgreSQL if DATABASE_URL is set, otherwise falls back to SQLite.
     Note: Some migrations (ENUMs, CHECK constraints) require PostgreSQL.
     """
