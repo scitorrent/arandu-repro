@@ -67,7 +67,7 @@ def test_create_paper_with_pdf(mock_ensure_dir, mock_validate, client, sample_pd
     mock_ensure_dir.return_value = mock_dir
 
     # Mock file operations
-    with patch("app.api.routes.papers.shutil.move") as mock_move:
+    with patch("app.api.routes.papers.shutil.move"):
         response = client.post(
             "/api/v1/papers",
             files={"pdf": ("test.pdf", sample_pdf, "application/pdf")},
