@@ -44,6 +44,9 @@ htmlcov/
 .env
 .env.local
 .env.*.local
+.env.bak
+*.env.bak
+*.bak
 
 # GCP credentials
 .gcp/

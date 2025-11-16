@@ -75,9 +75,8 @@ async def create_paper(
                 raise HTTPException(status_code=400, detail=f"Invalid PDF: {error}")
             
             # Move to final location
-            version_dir = ensure_paper_version_directory(aid, 1)
-            pdf_path = version_dir
-            shutil.move(str(tmp_path), str(pdf_path))
+            pdf_file_path = ensure_paper_version_directory(aid, 1)
+            shutil.move(str(tmp_path), str(pdf_file_path))
         
         # Handle URL
         elif url:
@@ -98,9 +97,8 @@ async def create_paper(
                         raise HTTPException(status_code=400, detail=f"Invalid PDF from URL: {error}")
                     
                     # Move to final location
-                    version_dir = ensure_paper_version_directory(aid, 1)
-                    pdf_path = version_dir
-                    shutil.move(str(tmp_path), str(pdf_path))
+                    pdf_file_path = ensure_paper_version_directory(aid, 1)
+                    shutil.move(str(tmp_path), str(pdf_file_path))
             except httpx.HTTPError as e:
                 raise HTTPException(status_code=400, detail=f"Failed to download PDF from URL: {str(e)}")
         
@@ -181,9 +179,8 @@ async def create_paper_version(
                 tmp_path.unlink()
                 raise HTTPException(status_code=400, detail=f"Invalid PDF: {error}")
             
-            version_dir = ensure_paper_version_directory(aid, new_version)
-            pdf_path = version_dir
-            shutil.move(str(tmp_path), str(pdf_path))
+            pdf_file_path = ensure_paper_version_directory(aid, new_version)
+            shutil.move(str(tmp_path), str(pdf_file_path))
         
         elif url:
             try:
@@ -200,9 +197,8 @@ async def create_paper_version(
                         tmp_path.unlink()
                         raise HTTPException(status_code=400, detail=f"Invalid PDF from URL: {error}")
                     
-                    version_dir = ensure_paper_version_directory(aid, new_version)
-                    pdf_path = version_dir
-                    shutil.move(str(tmp_path), str(pdf_path))
+                    pdf_file_path = ensure_paper_version_directory(aid, new_version)
+                    shutil.move(str(tmp_path), str(pdf_file_path))
             except httpx.HTTPError as e:
                 raise HTTPException(status_code=400, detail=f"Failed to download PDF from URL: {str(e)}")
         

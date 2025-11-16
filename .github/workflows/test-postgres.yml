@@ -2,7 +2,7 @@ name: Test with PostgreSQL
 
 on:
   push:
-    branches: [main, feat/review-mvp-sprint2]
+    branches: [main, feat/review-mvp-sprint2, feat/sprint2-hosting-apis-ui]
   pull_request:
     branches: [main]
 

@@ -1,10 +1,16 @@
 """PDF validation utilities."""
 
-import magic
 from pathlib import Path
 from typing import Optional
 
 from app.config import settings
+
+# Optional import for MIME type detection
+try:
+    import magic
+    HAS_MAGIC = True
+except ImportError:
+    HAS_MAGIC = False
 
 
 def validate_pdf_file(file_path: Path) -> tuple[bool, Optional[str]]:
@@ -25,15 +31,19 @@ def validate_pdf_file(file_path: Path) -> tuple[bool, Optional[str]]:
     if file_size_mb > settings.max_pdf_size_mb:
         return False, f"File too large: {file_size_mb:.2f}MB > {settings.max_pdf_size_mb}MB"
     
-    # Check MIME type
-    try:
-        mime = magic.Magic(mime=True)
-        detected_mime = mime.from_file(str(file_path))
-        if detected_mime != "application/pdf":
-            return False, f"Invalid MIME type: {detected_mime} (expected application/pdf)"
-    except Exception as e:
-        # Fallback if python-magic not available
-        # Check file extension
+    # Check MIME type (if python-magic is available)
+    if HAS_MAGIC:
+        try:
+            mime = magic.Magic(mime=True)
+            detected_mime = mime.from_file(str(file_path))
+            if detected_mime != "application/pdf":
+                return False, f"Invalid MIME type: {detected_mime} (expected application/pdf)"
+        except Exception as e:
+            # Fallback if python-magic fails
+            if file_path.suffix.lower() != ".pdf":
+                return False, f"Invalid file extension: {file_path.suffix}"
+    else:
+        # Fallback: check file extension
         if file_path.suffix.lower() != ".pdf":
             return False, f"Invalid file extension: {file_path.suffix}"
     
