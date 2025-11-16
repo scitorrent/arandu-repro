@@ -82,7 +82,11 @@ class TestE2EPipeline:
         )
         TestE2EPipeline.db.add(job)
         TestE2EPipeline.db.commit()
+        TestE2EPipeline.db.flush()  # Ensure job is visible
         job_id = str(job.id)
+        
+        # Verify job exists before processing
+        assert TestE2EPipeline.db.query(Job).filter(Job.id == job.id).first() is not None
 
         # Process job
         try:
@@ -138,7 +142,11 @@ class TestE2EPipeline:
         )
         TestE2EPipeline.db.add(job)
         TestE2EPipeline.db.commit()
+        TestE2EPipeline.db.flush()  # Ensure job is visible
         job_id = str(job.id)
+        
+        # Verify job exists before processing
+        assert TestE2EPipeline.db.query(Job).filter(Job.id == job.id).first() is not None
 
         # Verify initial status
         assert job.status == JobStatus.PENDING

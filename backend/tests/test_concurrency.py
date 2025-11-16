@@ -30,28 +30,34 @@ def db_session():
 
 def test_concurrent_aid_version_creation(db_session):
     """Test concurrent creation of same (aid, version)."""
+    from sqlalchemy import create_engine
+    from sqlalchemy.orm import sessionmaker
+    from sqlalchemy.pool import StaticPool
+    from app.db.base import Base
+
+    # Create shared engine for all threads
+    engine = create_engine(
+        "sqlite:///:memory:",
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+    )
+    Base.metadata.create_all(engine)
+    SessionLocal = sessionmaker(bind=engine)
+
+    # Create paper in shared database
     paper = Paper(
         id=uuid.uuid4(),
         aid="test-concurrent-001",
         visibility=PaperVisibility.PRIVATE,
     )
-    db_session.add(paper)
-    db_session.commit()
+    session = SessionLocal()
+    session.add(paper)
+    session.commit()
+    session.close()
 
     def create_version(version_num: int):
-        """Create version in separate session."""
-        from sqlalchemy import create_engine
-        from sqlalchemy.orm import sessionmaker
-        from sqlalchemy.pool import StaticPool
-
-        engine = create_engine(
-            "sqlite:///:memory:",
-            connect_args={"check_same_thread": False},
-            poolclass=StaticPool,
-        )
-        SessionLocal = sessionmaker(bind=engine)
+        """Create version in separate session using shared engine."""
         session = SessionLocal()
-
         try:
             version = PaperVersion(
                 id=uuid.uuid4(),
@@ -80,40 +86,44 @@ def test_concurrent_aid_version_creation(db_session):
 
 def test_concurrent_claim_hash_creation(db_session):
     """Test concurrent creation of same claim.hash."""
+    from sqlalchemy import create_engine
+    from sqlalchemy.orm import sessionmaker
+    from sqlalchemy.pool import StaticPool
+    from app.db.base import Base
+
+    # Create shared engine for all threads
+    engine = create_engine(
+        "sqlite:///:memory:",
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+    )
+    Base.metadata.create_all(engine)
+    SessionLocal = sessionmaker(bind=engine)
+
+    # Create paper and version in shared database
     paper = Paper(
         id=uuid.uuid4(),
         aid="test-concurrent-002",
         visibility=PaperVisibility.PRIVATE,
     )
-    db_session.add(paper)
-    db_session.commit()
-
     version = PaperVersion(
         id=uuid.uuid4(),
         aid=paper.aid,
         version=1,
         pdf_path="/papers/test-concurrent-002/v1/file.pdf",
     )
-    db_session.add(version)
-    db_session.commit()
+    session = SessionLocal()
+    session.add(paper)
+    session.add(version)
+    session.commit()
+    session.close()
 
     import hashlib
     claim_hash = hashlib.sha256(b"duplicate-claim").hexdigest()
 
     def create_claim(claim_id: uuid.UUID):
-        """Create claim with same hash."""
-        from sqlalchemy import create_engine
-        from sqlalchemy.orm import sessionmaker
-        from sqlalchemy.pool import StaticPool
-
-        engine = create_engine(
-            "sqlite:///:memory:",
-            connect_args={"check_same_thread": False},
-            poolclass=StaticPool,
-        )
-        SessionLocal = sessionmaker(bind=engine)
+        """Create claim with same hash using shared engine."""
         session = SessionLocal()
-
         try:
             claim = Claim(
                 id=claim_id,

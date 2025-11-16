@@ -8,7 +8,7 @@ logger = logging.getLogger(__name__)
 
 # Try to import LangGraph, but allow graceful degradation
 try:
-    from langgraph.graph import END, START, StateGraph
+    from langgraph.graph import END, StateGraph
 
     LANGGRAPH_AVAILABLE = True
 except ImportError:

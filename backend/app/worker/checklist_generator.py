@@ -99,9 +99,9 @@ def check_seeds_fixed(paper_text: str, repo_path: Path | None = None) -> Checkli
 
     # Check paper for seed mentions
     seed_patterns = [
-        r"seed[:\s]+(\d+)",
-        r"random[_\s]?state[:\s]+(\d+)",
-        r"random[_\s]?seed[:\s]+(\d+)",
+        r"seed[:\s=]+(\d+)",
+        r"random[_\s]?state[:\s=]+(\d+)",
+        r"random[_\s]?seed[:\s=]+(\d+)",
     ]
 
     for pattern in seed_patterns:
