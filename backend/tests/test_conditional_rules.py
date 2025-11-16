@@ -8,10 +8,12 @@ from datetime import UTC, datetime
 from app.models import (
     Paper,
     PaperVersion,
+    PaperExternalId,
     QualityScore,
     Claim,
     ClaimLink,
     PaperVisibility,
+    ExternalIdKind,
     QualityScoreScope,
     ClaimRelation,
 )
@@ -178,7 +180,7 @@ def test_unique_paper_external_id_kind(db_session, sample_paper):
     ext_id1 = PaperExternalId(
         id=uuid.uuid4(),
         paper_id=sample_paper.id,
-        kind="arxiv",
+        kind=ExternalIdKind.ARXIV,
         value="1234.5678",
     )
     db_session.add(ext_id1)

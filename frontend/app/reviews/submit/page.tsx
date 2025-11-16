@@ -31,7 +31,8 @@ export default function SubmitReviewPage() {
       if (repoUrl) formData.append('repo_url', repoUrl)
       if (pdfFile) formData.append('pdf_file', pdfFile)
 
-      const response = await fetch('http://localhost:8000/api/v1/reviews', {
+      const apiBase = process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:8000'
+      const response = await fetch(`${apiBase}/api/v1/reviews`, {
         method: 'POST',
         body: formData,
       })

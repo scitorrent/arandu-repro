@@ -89,14 +89,19 @@ def extract_text_from_url(url: str) -> str:
                 super().__init__()
                 self.text_parts = []
                 self.skip_tags = {"script", "style", "nav", "footer", "header"}
+                self.skip_tag_depth = 0
 
             def handle_data(self, data):
-                if data.strip():
+                if self.skip_tag_depth == 0 and data.strip():
                     self.text_parts.append(data.strip())
 
             def handle_starttag(self, tag, attrs):
                 if tag in self.skip_tags:
-                    self.skip_tags.add(tag)
+                    self.skip_tag_depth += 1
+
+            def handle_endtag(self, tag):
+                if tag in self.skip_tags and self.skip_tag_depth > 0:
+                    self.skip_tag_depth -= 1
 
         parser = TextExtractor()
         parser.feed(response.text)

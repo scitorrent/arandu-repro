@@ -10,7 +10,7 @@ interface BadgeTileProps {
 export default function BadgeTile({ reviewId, badgeType }: BadgeTileProps) {
   const [copied, setCopied] = useState(false)
 
-  const baseUrl = 'http://localhost:8000'
+  const baseUrl = process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:8000'
   const badgeUrl = `${baseUrl}/api/v1/badges/${reviewId}/${badgeType}.svg`
   const reviewUrl = `${baseUrl}/reviews/${reviewId}`
   const snippet = `[![Arandu: ${badgeType}](${badgeUrl})](${reviewUrl})`

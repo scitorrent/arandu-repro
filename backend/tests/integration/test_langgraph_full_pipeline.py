@@ -147,17 +147,6 @@ def test_langgraph_pipeline_direct_fallback():
     print("✅ Direct pipeline test completed")
 
 
-if __name__ == "__main__":
-    # Allow running directly for quick testing
-    import sys
-
-    # Require GEMINI_API_KEY to be set via environment variable
-    # Never hardcode API keys in source code
-    if not os.getenv("GEMINI_API_KEY"):
-        print("❌ Error: GEMINI_API_KEY environment variable not set")
-        print("   Set it before running: export GEMINI_API_KEY=your_key")
-        sys.exit(1)
-
-    # Run test
-    test_langgraph_pipeline_full()
+# Note: This test should be run via pytest, not directly
+# If you need to run it manually, use: pytest tests/integration/test_langgraph_full_pipeline.py
 

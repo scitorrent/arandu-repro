@@ -16,7 +16,7 @@ export default function ArtifactsPanel({
 }: ArtifactsPanelProps) {
   const [copied, setCopied] = useState(false)
 
-  const baseUrl = 'http://localhost:8000'
+  const baseUrl = process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:8000'
 
   return (
     <div className="space-y-6">

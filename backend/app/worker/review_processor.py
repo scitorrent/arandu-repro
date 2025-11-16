@@ -133,8 +133,9 @@ def process_review(review_id: str) -> None:
                 )
 
             # Step 2: Claim extraction
+            # paper_meta is defined in the else branch above, so it's available here
             with log_step(review_id, "claim_extraction", review_id=review_id):
-                claims = extract_claims_by_section(paper_meta.text)
+                claims = extract_claims_by_section(review.paper_text)
                 claims_json = claims_to_json(claims)
 
                 review.claims = claims_json
@@ -215,7 +216,7 @@ def process_review(review_id: str) -> None:
                     pass
 
                 checklist = generate_checklist(
-                    paper_meta.text,
+                    review.paper_text,
                     claim_objects if review.claims else [],
                     repo_path=repo_path,
                 )
@@ -236,11 +237,33 @@ def process_review(review_id: str) -> None:
             # Step 5: Quality Score + SHAP
             with log_step(review_id, "quality_score", review_id=review_id):
                 # Build features
+                # citations_by_claim is only defined if claim_objects exist and citation suggestion ran
+                citations_dict = None
+                if review.citations and claim_objects:
+                    # Reconstruct citations_by_claim from review.citations JSON
+                    from app.worker.citation_suggester import CitationCandidate
+                    citations_dict = {}
+                    for claim_id, citations_list in review.citations.items():
+                        citations_dict[claim_id] = [
+                            CitationCandidate(
+                                title=c.get("title", ""),
+                                authors=c.get("authors", []),
+                                venue=c.get("venue", ""),
+                                year=c.get("year", 0),
+                                doi=c.get("doi"),
+                                url=c.get("url", ""),
+                                score_final=c.get("score_final", 0.0),
+                                score_rerank=c.get("score_rerank", 0.0),
+                                justification=c.get("justification", ""),
+                            )
+                            for c in citations_list
+                        ]
+                
                 features_obj = build_features(
-                    claim_objects if review.claims else [],
-                    paper_meta.text,
+                    claim_objects,
+                    review.paper_text,
                     checklist,
-                    citations_by_claim if review.citations else None,
+                    citations_dict,
                     repo_path=repo_path,
                 )
 

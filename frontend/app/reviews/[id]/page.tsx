@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from 'react'
 import { useParams } from 'next/navigation'
+
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:8000'
 import ClaimCard from '@/components/review/ClaimCard'
 import ChecklistPanel from '@/components/review/ChecklistPanel'
 import ScorePanel from '@/components/review/ScorePanel'
@@ -62,7 +64,7 @@ export default function ReviewDetailPage() {
   useEffect(() => {
     const fetchReview = async () => {
       try {
-        const response = await fetch(`http://localhost:8000/api/v1/reviews/${reviewId}`)
+        const response = await fetch(`${API_BASE}/api/v1/reviews/${reviewId}`)
         if (!response.ok) throw new Error('Failed to fetch review')
         const data = await response.json()
         setReview(data)
@@ -137,19 +139,19 @@ export default function ReviewDetailPage() {
               <>
                 {review.badges.claim_mapped && (
                   <img
-                    src={`http://localhost:8000/api/v1/badges/${reviewId}/claim-mapped.svg`}
+                    src={`${API_BASE}/api/v1/badges/${reviewId}/claim-mapped.svg`}
                     alt="Claim-mapped"
                     className="h-5"
                   />
                 )}
                 <img
-                  src={`http://localhost:8000/api/v1/badges/${reviewId}/method-check.svg`}
+                  src={`${API_BASE}/api/v1/badges/${reviewId}/method-check.svg`}
                   alt="Method-check"
                   className="h-5"
                 />
                 {review.badges.citations_augmented && (
                   <img
-                    src={`http://localhost:8000/api/v1/badges/${reviewId}/citations-augmented.svg`}
+                    src={`${API_BASE}/api/v1/badges/${reviewId}/citations-augmented.svg`}
                     alt="Citations-augmented"
                     className="h-5"
                   />

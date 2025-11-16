@@ -1,5 +1,5 @@
 #!/bin/bash
-# Script para iniciar demo local do Arandu
+# Script to start local Arandu demo
 
 set -e
 

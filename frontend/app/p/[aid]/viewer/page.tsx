@@ -1,14 +1,16 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useSearchParams } from "next/navigation";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:8000";
 
 export default function PDFViewer() {
   const params = useParams();
+  const searchParams = useSearchParams();
   const aid = params.aid as string;
-  const version = params.v as string | undefined;
+  // Version is passed via query parameter ?v=n, not route param
+  const version = searchParams.get("v") || undefined;
   
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
