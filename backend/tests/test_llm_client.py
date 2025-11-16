@@ -24,8 +24,8 @@ def test_llm_client_available():
 
 
 @pytest.mark.skipif(
-    not pytest.config.getoption("--test-llm", default=False),
-    reason="LLM tests require --test-llm flag and GEMINI_API_KEY",
+    not os.getenv("GEMINI_API_KEY"),
+    reason="LLM tests require GEMINI_API_KEY environment variable",
 )
 def test_generate_text_simple():
     """Test simple text generation."""
