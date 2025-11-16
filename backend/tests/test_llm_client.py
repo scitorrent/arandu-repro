@@ -3,7 +3,7 @@
 import os
 
 import pytest
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 
 from app.worker.llm_client import generate_text, get_llm_client
 
@@ -35,8 +35,8 @@ def test_generate_text_simple():
 
 
 @pytest.mark.skipif(
-    not pytest.config.getoption("--test-llm", default=False),
-    reason="LLM tests require --test-llm flag and GEMINI_API_KEY",
+    not os.getenv("GEMINI_API_KEY"),
+    reason="LLM tests require GEMINI_API_KEY environment variable",
 )
 def test_generate_text_narrative():
     """Test narrative generation for quality score."""

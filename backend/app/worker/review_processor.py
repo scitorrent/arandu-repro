@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 from app.db.session import SessionLocal
 from app.models.review import Review, ReviewStatus
 from app.utils.logging import log_event, log_step
-from app.worker.review_pipeline import create_review_pipeline, run_pipeline_direct
+from app.worker.review_pipeline import create_review_pipeline
 from app.worker.review_state import ReviewState
 
 logger = logging.getLogger(__name__)

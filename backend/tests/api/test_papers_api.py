@@ -31,8 +31,8 @@ def db_engine():
 @pytest.fixture
 def db_session(db_engine):
     """Create database session."""
-    SessionLocal = sessionmaker(bind=db_engine)
-    session = SessionLocal()
+    session_local = sessionmaker(bind=db_engine)  # noqa: N806
+    session = session_local()
     yield session
     session.close()
 
@@ -42,7 +42,7 @@ def client(db_session, monkeypatch):
     """Create test client with database session."""
     # Mock SessionLocal to return our test session
     monkeypatch.setattr("app.api.routes.papers.SessionLocal", lambda: db_session)
-    
+
     return TestClient(app)
 
 
@@ -60,12 +60,12 @@ def test_create_paper_with_pdf(mock_ensure_dir, mock_validate, client, sample_pd
     """Test creating a paper with PDF upload."""
     # Mock PDF validation
     mock_validate.return_value = (True, None)
-    
+
     # Mock directory creation
     mock_dir = MagicMock()
     mock_dir.parent = Path("/tmp/test")
     mock_ensure_dir.return_value = mock_dir
-    
+
     # Mock file operations
     with patch("app.api.routes.papers.shutil.move") as mock_move:
         response = client.post(
@@ -76,19 +76,19 @@ def test_create_paper_with_pdf(mock_ensure_dir, mock_validate, client, sample_pd
                 "visibility": "private",
             },
         )
-        
+
         assert response.status_code == 201
         data = response.json()
         assert "aid" in data
         assert data["version"] == 1
         assert "viewer_url" in data
         assert "paper_url" in data
-        
+
         # Verify paper was created
         paper = db_session.query(Paper).filter(Paper.aid == data["aid"]).first()
         assert paper is not None
         assert paper.title == "Test Paper"
-        
+
         # Verify version was created
         version = db_session.query(PaperVersion).filter(PaperVersion.aid == data["aid"]).first()
         assert version is not None
@@ -101,12 +101,12 @@ def test_create_paper_version(mock_ensure_dir, mock_validate, client, sample_pdf
     """Test creating a new version of an existing paper."""
     # Mock PDF validation
     mock_validate.return_value = (True, None)
-    
+
     # Mock directory creation
     mock_dir = MagicMock()
     mock_dir.parent = Path("/tmp/test")
     mock_ensure_dir.return_value = mock_dir
-    
+
     # Create paper first
     paper = Paper(
         aid="test-001",
@@ -114,7 +114,7 @@ def test_create_paper_version(mock_ensure_dir, mock_validate, client, sample_pdf
         visibility=PaperVisibility.PRIVATE,
     )
     db_session.add(paper)
-    
+
     version1 = PaperVersion(
         aid="test-001",
         version=1,
@@ -122,14 +122,14 @@ def test_create_paper_version(mock_ensure_dir, mock_validate, client, sample_pdf
     )
     db_session.add(version1)
     db_session.commit()
-    
+
     # Create version 2
     with patch("app.api.routes.papers.shutil.move"):
         response = client.post(
             "/api/v1/papers/test-001/versions",
             files={"pdf": ("test2.pdf", sample_pdf, "application/pdf")},
         )
-        
+
         assert response.status_code == 201
         data = response.json()
         assert data["aid"] == "test-001"
@@ -146,7 +146,7 @@ def test_get_paper_metadata(client, db_session):
         visibility=PaperVisibility.PRIVATE,
     )
     db_session.add(paper)
-    
+
     version = PaperVersion(
         aid="test-002",
         version=1,
@@ -154,9 +154,9 @@ def test_get_paper_metadata(client, db_session):
     )
     db_session.add(version)
     db_session.commit()
-    
+
     response = client.get("/api/v1/papers/test-002")
-    
+
     assert response.status_code == 200
     data = response.json()
     assert data["aid"] == "test-002"
@@ -182,7 +182,7 @@ def test_get_paper_claims_empty(client, db_session):
         visibility=PaperVisibility.PRIVATE,
     )
     db_session.add(paper)
-    
+
     version = PaperVersion(
         aid="test-003",
         version=1,
@@ -190,9 +190,9 @@ def test_get_paper_claims_empty(client, db_session):
     )
     db_session.add(version)
     db_session.commit()
-    
+
     response = client.get("/api/v1/papers/test-003/claims")
-    
+
     assert response.status_code == 200
     data = response.json()
     assert data["aid"] == "test-003"
