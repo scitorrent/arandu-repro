@@ -151,9 +151,12 @@ if __name__ == "__main__":
     # Allow running directly for quick testing
     import sys
 
-    # Set up minimal environment
+    # Require GEMINI_API_KEY to be set via environment variable
+    # Never hardcode API keys in source code
     if not os.getenv("GEMINI_API_KEY"):
-        os.environ["GEMINI_API_KEY"] = "AIzaSyBwU9aPYIpDvHqchVZ_sFi15TG-kYinGRo"
+        print("❌ Error: GEMINI_API_KEY environment variable not set")
+        print("   Set it before running: export GEMINI_API_KEY=your_key")
+        sys.exit(1)
 
     # Run test
     test_langgraph_pipeline_full()

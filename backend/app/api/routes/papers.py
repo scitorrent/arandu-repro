@@ -340,13 +340,28 @@ async def get_paper_viewer(
         file_size = full_path.stat().st_size
         
         if range_header:
-            # Parse Range header
-            range_match = range_header.replace("bytes=", "").split("-")
-            start = int(range_match[0]) if range_match[0] else 0
-            end = int(range_match[1]) if range_match[1] else file_size - 1
-            
-            if start >= file_size or end >= file_size:
-                raise HTTPException(status_code=416, detail="Range Not Satisfiable")
+            # Parse Range header (format: "bytes=start-end")
+            try:
+                if not range_header.startswith("bytes="):
+                    raise HTTPException(status_code=400, detail="Invalid Range header format")
+                
+                range_spec = range_header.replace("bytes=", "").split("-")
+                if len(range_spec) != 2:
+                    raise HTTPException(status_code=400, detail="Invalid Range header format")
+                
+                start_str, end_str = range_spec
+                start = int(start_str) if start_str else 0
+                end = int(end_str) if end_str else file_size - 1
+                
+                # Validate range
+                if start < 0 or end < 0:
+                    raise HTTPException(status_code=416, detail="Range Not Satisfiable")
+                if start >= file_size or end >= file_size:
+                    raise HTTPException(status_code=416, detail="Range Not Satisfiable")
+                if start > end:
+                    raise HTTPException(status_code=416, detail="Range Not Satisfiable")
+            except ValueError:
+                raise HTTPException(status_code=400, detail="Invalid Range header: non-numeric values")
             
             # Read chunk
             with open(full_path, "rb") as f:
