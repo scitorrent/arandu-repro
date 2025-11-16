@@ -30,7 +30,7 @@ def test_review_e2e_simple_text():
         # Process review (will fail at ingestion if no PDF, but tests the flow)
         try:
             process_review(review_id)
-        except Exception as e:
+        except Exception:
             # Expected if PDF parsing fails, but we can still test the structure
             pass
 

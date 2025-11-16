@@ -3,7 +3,6 @@
 import pytest
 import uuid
 import hashlib
-from datetime import UTC, datetime
 
 from app.models import (
     Paper,
@@ -26,7 +25,7 @@ def db_session():
     from sqlalchemy.orm import sessionmaker
     from sqlalchemy.pool import StaticPool
     from app.db.base import Base
-    
+
     engine = create_engine(
         "sqlite:///:memory:",
         connect_args={"check_same_thread": False},
@@ -62,10 +61,10 @@ def test_smoke_e2e_full_flow(db_session):
     db_session.add(paper)
     db_session.commit()
     db_session.refresh(paper)
-    
+
     assert paper.id is not None
     assert paper.aid == "test-smoke-001"
-    
+
     # 2. Create PaperVersion
     version = PaperVersion(
         id=uuid.uuid4(),
@@ -77,11 +76,11 @@ def test_smoke_e2e_full_flow(db_session):
     db_session.add(version)
     db_session.commit()
     db_session.refresh(version)
-    
+
     assert version.id is not None
     assert version.aid == paper.aid
     assert version.version == 1
-    
+
     # 3. Create PaperExternalId
     ext_id = PaperExternalId(
         id=uuid.uuid4(),
@@ -92,10 +91,10 @@ def test_smoke_e2e_full_flow(db_session):
     db_session.add(ext_id)
     db_session.commit()
     db_session.refresh(ext_id)
-    
+
     assert ext_id.paper_id == paper.id
     assert ext_id.kind == ExternalIdKind.ARXIV
-    
+
     # 4. Create Claims (≥3)
     claims = []
     for i in range(3):
@@ -104,7 +103,7 @@ def test_smoke_e2e_full_flow(db_session):
         span_end = (i + 1) * 100
         content = f"{text}|{span_start}|{span_end}|{version.id}"
         claim_hash = hashlib.sha256(content.encode()).hexdigest()
-        
+
         claim = Claim(
             id=uuid.uuid4(),
             paper_version_id=version.id,
@@ -119,14 +118,14 @@ def test_smoke_e2e_full_flow(db_session):
         )
         db_session.add(claim)
         claims.append(claim)
-    
+
     db_session.commit()
     for claim in claims:
         db_session.refresh(claim)
-    
+
     assert len(claims) == 3
     assert all(c.paper_version_id == version.id for c in claims)
-    
+
     # 5. Create QualityScore (scope='version')
     score = QualityScore(
         id=uuid.uuid4(),
@@ -154,11 +153,11 @@ def test_smoke_e2e_full_flow(db_session):
     db_session.add(score)
     db_session.commit()
     db_session.refresh(score)
-    
+
     assert score.paper_version_id == version.id
     assert score.scope == QualityScoreScope.VERSION
     assert score.paper_id is None  # Must be None for version scope
-    
+
     # 6. Create ClaimLinks
     link = ClaimLink(
         id=uuid.uuid4(),
@@ -173,23 +172,23 @@ def test_smoke_e2e_full_flow(db_session):
     db_session.add(link)
     db_session.commit()
     db_session.refresh(link)
-    
+
     assert link.claim_id == claims[0].id
     assert link.relation == ClaimRelation.EQUIVALENT
     assert link.reasoning_ref is not None
-    
+
     # Verify relationships
     db_session.refresh(paper)
     assert len(paper.versions) == 1
     assert len(paper.external_ids) == 1
-    
+
     db_session.refresh(version)
     assert len(version.claims) == 3
     assert len(version.quality_scores) == 1
-    
+
     db_session.refresh(claims[0])
     assert len(claims[0].claim_links) == 1
-    
+
     print("✅ E2E smoke test passed: full flow completed")
 
 
@@ -202,7 +201,7 @@ def test_quality_score_scope_xor_in_db(db_session):
     )
     db_session.add(paper)
     db_session.commit()
-    
+
     version = PaperVersion(
         id=uuid.uuid4(),
         aid=paper.aid,
@@ -211,7 +210,7 @@ def test_quality_score_scope_xor_in_db(db_session):
     )
     db_session.add(version)
     db_session.commit()
-    
+
     # Valid: scope='paper' with paper_id only
     score1 = QualityScore(
         id=uuid.uuid4(),
@@ -223,7 +222,7 @@ def test_quality_score_scope_xor_in_db(db_session):
     )
     db_session.add(score1)
     db_session.commit()
-    
+
     # Valid: scope='version' with paper_version_id only
     score2 = QualityScore(
         id=uuid.uuid4(),
@@ -235,7 +234,7 @@ def test_quality_score_scope_xor_in_db(db_session):
     )
     db_session.add(score2)
     db_session.commit()
-    
+
     # Invalid: scope='paper' but both IDs set
     score3 = QualityScore(
         id=uuid.uuid4(),
@@ -247,12 +246,12 @@ def test_quality_score_scope_xor_in_db(db_session):
         rationale={},
     )
     db_session.add(score3)
-    
+
     with pytest.raises(Exception):  # CheckConstraint violation
         db_session.commit()
-    
+
     db_session.rollback()
-    
+
     # Invalid: scope='version' but both IDs set
     score4 = QualityScore(
         id=uuid.uuid4(),
@@ -264,7 +263,7 @@ def test_quality_score_scope_xor_in_db(db_session):
         rationale={},
     )
     db_session.add(score4)
-    
+
     with pytest.raises(Exception):  # CheckConstraint violation
         db_session.commit()
 

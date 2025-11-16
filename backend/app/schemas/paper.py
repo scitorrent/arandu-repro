@@ -1,8 +1,6 @@
 """Paper schemas."""
 
 from datetime import datetime
-from enum import Enum
-from typing import Optional
 from uuid import UUID
 
 from pydantic import BaseModel, Field
@@ -14,11 +12,11 @@ class PaperBase(BaseModel):
     """Base paper schema."""
 
     aid: str = Field(..., max_length=100)  # Identificador estável
-    title: Optional[str] = Field(None, max_length=500)
-    repo_url: Optional[str] = Field(None, max_length=1000)
+    title: str | None = Field(None, max_length=500)
+    repo_url: str | None = Field(None, max_length=1000)
     visibility: PaperVisibility = PaperVisibility.PRIVATE
-    license: Optional[str] = Field(None, max_length=200)
-    created_by: Optional[str] = Field(None, max_length=200)
+    license: str | None = Field(None, max_length=200)
+    created_by: str | None = Field(None, max_length=200)
 
 
 class PaperCreate(PaperBase):
@@ -30,20 +28,20 @@ class PaperCreate(PaperBase):
 class PaperUpdate(BaseModel):
     """Schema for updating a paper."""
 
-    title: Optional[str] = None
-    repo_url: Optional[str] = None
-    visibility: Optional[PaperVisibility] = None
-    license: Optional[str] = None
+    title: str | None = None
+    repo_url: str | None = None
+    visibility: PaperVisibility | None = None
+    license: str | None = None
 
 
 class Paper(PaperBase):
     """Schema for paper response."""
 
     id: UUID
-    approved_public_at: Optional[datetime] = None
+    approved_public_at: datetime | None = None
     created_at: datetime
     updated_at: datetime
-    deleted_at: Optional[datetime] = None
+    deleted_at: datetime | None = None
 
     class Config:
         """Pydantic config."""

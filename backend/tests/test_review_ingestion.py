@@ -1,6 +1,5 @@
 """Tests for review ingestion."""
 
-from pathlib import Path
 
 import pytest
 
@@ -8,7 +7,6 @@ from app.worker.review_ingestion import (
     PaperMeta,
     clean_text,
     extract_metadata_from_text,
-    extract_text_from_pdf,
     ingest_paper,
 )
 

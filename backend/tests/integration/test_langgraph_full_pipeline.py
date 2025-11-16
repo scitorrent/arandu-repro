@@ -1,8 +1,6 @@
 """Integration test for full LangGraph pipeline."""
 
 import pytest
-import os
-from pathlib import Path
 from uuid import uuid4
 
 from app.worker.review_pipeline import create_review_pipeline, run_pipeline_direct

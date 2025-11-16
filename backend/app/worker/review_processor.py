@@ -260,7 +260,7 @@ def process_review(review_id: str) -> None:
                             )
                             for c in citations_list
                         ]
-                
+
                 features_obj = build_features(
                     claim_objects,
                     review.paper_text,

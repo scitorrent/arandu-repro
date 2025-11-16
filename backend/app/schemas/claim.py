@@ -2,7 +2,7 @@
 
 import hashlib
 from datetime import datetime
-from typing import Any, Dict, Literal, Optional
+from typing import Any
 from uuid import UUID
 
 from pydantic import BaseModel, Field, field_validator
@@ -12,14 +12,14 @@ class ClaimBase(BaseModel):
     """Base claim schema."""
 
     text: str = Field(..., max_length=5000)
-    span_start: Optional[int] = None  # Inclusive start [start, end)
-    span_end: Optional[int] = None  # Exclusive end [start, end)
-    text_hash: Optional[str] = Field(None, max_length=64)  # Hash do documento base
-    page: Optional[int] = None
-    bbox: Optional[Dict[str, Any]] = None  # {x, y, width, height}
-    section: Optional[str] = Field(None, max_length=100)
-    confidence: Optional[float] = Field(None, ge=0.0, le=1.0)
-    extraction_model_version: Optional[str] = Field(None, max_length=50)
+    span_start: int | None = None  # Inclusive start [start, end)
+    span_end: int | None = None  # Exclusive end [start, end)
+    text_hash: str | None = Field(None, max_length=64)  # Hash do documento base
+    page: int | None = None
+    bbox: dict[str, Any] | None = None  # {x, y, width, height}
+    section: str | None = Field(None, max_length=100)
+    confidence: float | None = Field(None, ge=0.0, le=1.0)
+    extraction_model_version: str | None = Field(None, max_length=50)
 
 
 class ClaimCreate(ClaimBase):
@@ -48,7 +48,7 @@ class Claim(ClaimBase):
 
     id: UUID
     paper_version_id: UUID
-    paper_id: Optional[UUID] = None
+    paper_id: UUID | None = None
     hash: str
     created_at: datetime
 

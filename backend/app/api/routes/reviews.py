@@ -11,7 +11,6 @@ from sqlalchemy.orm import Session
 from app.api.dependencies import get_db
 from app.models.review import Review, ReviewStatus
 from app.schemas.review import (
-    ReviewCreate,
     ReviewDetailResponse,
     ReviewResponse,
     ReviewStatusResponse,

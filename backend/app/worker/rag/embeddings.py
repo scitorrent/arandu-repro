@@ -1,8 +1,6 @@
 """Embeddings service for RAG pipeline."""
 
 import logging
-from pathlib import Path
-from typing import Any
 
 from app.config import settings
 

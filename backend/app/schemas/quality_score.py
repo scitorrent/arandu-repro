@@ -1,8 +1,7 @@
 """Quality score schemas."""
 
 from datetime import datetime
-from enum import Enum
-from typing import Any, Dict, Optional
+from typing import Any
 from uuid import UUID
 
 from pydantic import BaseModel, Field, field_validator
@@ -37,16 +36,16 @@ class QualityScoreBase(BaseModel):
 
     scope: QualityScoreScope
     score: int = Field(..., ge=0, le=100)
-    signals: Dict[str, Any]
-    rationale: Dict[str, Any]
+    signals: dict[str, Any]
+    rationale: dict[str, Any]
     scoring_model_version: str = "v0"
 
 
 class QualityScoreCreate(QualityScoreBase):
     """Schema for creating a quality score."""
 
-    paper_id: Optional[UUID] = None
-    paper_version_id: Optional[UUID] = None
+    paper_id: UUID | None = None
+    paper_version_id: UUID | None = None
 
     @field_validator("scope")
     @classmethod
@@ -55,7 +54,7 @@ class QualityScoreCreate(QualityScoreBase):
         scope = v
         paper_id = info.data.get("paper_id")
         paper_version_id = info.data.get("paper_version_id")
-        
+
         if scope == QualityScoreScope.PAPER:
             if not paper_id:
                 raise ValueError("paper_id required when scope='paper'")
@@ -73,8 +72,8 @@ class QualityScore(QualityScoreBase):
     """Schema for quality score response."""
 
     id: UUID
-    paper_id: Optional[UUID] = None
-    paper_version_id: Optional[UUID] = None
+    paper_id: UUID | None = None
+    paper_version_id: UUID | None = None
     created_at: datetime
 
     class Config:

@@ -1,6 +1,5 @@
 """Tests for metrics collection."""
 
-import pytest
 
 from app.utils.metrics import ReviewMetrics, get_metrics_summary, record_review_metrics, reset_metrics
 

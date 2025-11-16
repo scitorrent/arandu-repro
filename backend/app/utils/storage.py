@@ -3,7 +3,6 @@
 import os
 import secrets
 from pathlib import Path
-from typing import Optional
 
 from app.config import settings
 
@@ -12,11 +11,11 @@ def validate_papers_base() -> Path:
     """Validate and ensure PAPERS_BASE directory exists."""
     base = settings.papers_base_path
     base.mkdir(parents=True, exist_ok=True)
-    
+
     # Check write permissions
     if not os.access(base, os.W_OK):
         raise PermissionError(f"Cannot write to PAPERS_BASE: {base}")
-    
+
     return base
 
 
@@ -37,25 +36,25 @@ def get_paper_version_path(aid: str, version: int, filename: str = "file.pdf") -
     # Validate aid (alphanumeric, dash, underscore only)
     if not all(c.isalnum() or c in ('-', '_') for c in aid):
         raise ValueError(f"Invalid AID format: {aid}")
-    
+
     # Validate version
     if version < 1:
         raise ValueError(f"Version must be >= 1: {version}")
-    
+
     # Validate filename (no path traversal)
     if '..' in filename or '/' in filename or '\\' in filename:
         raise ValueError(f"Invalid filename: {filename}")
-    
+
     # Construct path: /papers/{aid}/v{version}/{filename}
     path = Path("papers") / aid / f"v{version}" / filename
-    
+
     # Resolve to ensure no traversal
     resolved = (Path("/") / path).resolve()
     base_resolved = Path("/") / Path("papers")
-    
+
     if not str(resolved).startswith(str(base_resolved)):
         raise ValueError(f"Path traversal detected: {path}")
-    
+
     return path
 
 
@@ -67,10 +66,10 @@ def ensure_paper_version_directory(aid: str, version: int) -> Path:
     base = validate_papers_base()
     rel_path = get_paper_version_path(aid, version)
     full_path = base / rel_path
-    
+
     # Create directory atomically
     full_path.parent.mkdir(parents=True, exist_ok=True)
-    
+
     return full_path
 
 

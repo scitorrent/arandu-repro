@@ -2,7 +2,6 @@
 
 import pytest
 import uuid
-import threading
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from app.models import Paper, PaperVersion, Claim, PaperVisibility
@@ -15,7 +14,7 @@ def db_session():
     from sqlalchemy.orm import sessionmaker
     from sqlalchemy.pool import StaticPool
     from app.db.base import Base
-    
+
     engine = create_engine(
         "sqlite:///:memory:",
         connect_args={"check_same_thread": False},
@@ -38,13 +37,13 @@ def test_concurrent_aid_version_creation(db_session):
     )
     db_session.add(paper)
     db_session.commit()
-    
+
     def create_version(version_num: int):
         """Create version in separate session."""
         from sqlalchemy import create_engine
         from sqlalchemy.orm import sessionmaker
         from sqlalchemy.pool import StaticPool
-        
+
         engine = create_engine(
             "sqlite:///:memory:",
             connect_args={"check_same_thread": False},
@@ -52,7 +51,7 @@ def test_concurrent_aid_version_creation(db_session):
         )
         SessionLocal = sessionmaker(bind=engine)
         session = SessionLocal()
-        
+
         try:
             version = PaperVersion(
                 id=uuid.uuid4(),
@@ -68,12 +67,12 @@ def test_concurrent_aid_version_creation(db_session):
             return False, str(e)
         finally:
             session.close()
-    
+
     # Try to create same version concurrently
     with ThreadPoolExecutor(max_workers=5) as executor:
         futures = [executor.submit(create_version, 1) for _ in range(5)]
         results = [f.result() for f in as_completed(futures)]
-    
+
     # Only one should succeed
     successes = [r for r in results if r[0]]
     assert len(successes) == 1, f"Expected 1 success, got {len(successes)}"
@@ -88,7 +87,7 @@ def test_concurrent_claim_hash_creation(db_session):
     )
     db_session.add(paper)
     db_session.commit()
-    
+
     version = PaperVersion(
         id=uuid.uuid4(),
         aid=paper.aid,
@@ -97,16 +96,16 @@ def test_concurrent_claim_hash_creation(db_session):
     )
     db_session.add(version)
     db_session.commit()
-    
+
     import hashlib
     claim_hash = hashlib.sha256(b"duplicate-claim").hexdigest()
-    
+
     def create_claim(claim_id: uuid.UUID):
         """Create claim with same hash."""
         from sqlalchemy import create_engine
         from sqlalchemy.orm import sessionmaker
         from sqlalchemy.pool import StaticPool
-        
+
         engine = create_engine(
             "sqlite:///:memory:",
             connect_args={"check_same_thread": False},
@@ -114,7 +113,7 @@ def test_concurrent_claim_hash_creation(db_session):
         )
         SessionLocal = sessionmaker(bind=engine)
         session = SessionLocal()
-        
+
         try:
             claim = Claim(
                 id=claim_id,
@@ -130,13 +129,13 @@ def test_concurrent_claim_hash_creation(db_session):
             return False, str(e)
         finally:
             session.close()
-    
+
     # Try to create claims with same hash concurrently
     claim_ids = [uuid.uuid4() for _ in range(5)]
     with ThreadPoolExecutor(max_workers=5) as executor:
         futures = [executor.submit(create_claim, cid) for cid in claim_ids]
         results = [f.result() for f in as_completed(futures)]
-    
+
     # Only one should succeed
     successes = [r for r in results if r[0]]
     assert len(successes) == 1, f"Expected 1 success, got {len(successes)}"

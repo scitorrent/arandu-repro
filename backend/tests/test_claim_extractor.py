@@ -1,6 +1,5 @@
 """Tests for claim extraction."""
 
-import pytest
 
 from app.worker.claim_extractor import (
     Claim,

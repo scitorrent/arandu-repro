@@ -1,7 +1,7 @@
 """Tests for LangGraph pipeline orchestration."""
 
 import pytest
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 
 from app.worker.review_pipeline import create_review_pipeline, run_pipeline_direct
 from app.worker.review_state import ReviewState
@@ -65,37 +65,6 @@ def test_langgraph_node_order():
     pipeline = create_review_pipeline()
     if not pipeline:
         pytest.skip("LangGraph not available")
-
-    # Create minimal state
-    initial_state: ReviewState = {
-        "review_id": "test-order",
-        "url": None,
-        "doi": None,
-        "pdf_file_path": None,
-        "repo_url": None,
-        "paper_meta": None,
-        "paper_text": "Test paper text with claims.",
-        "claims": None,
-        "citations": None,
-        "checklist": None,
-        "quality_score": None,
-        "badges": None,
-        "html_report_path": None,
-        "json_summary_path": None,
-        "status": "processing",
-        "error_message": None,
-        "errors": [],
-    }
-
-    # Mock all nodes to track execution order
-    execution_order = []
-
-    def track_node(node_name):
-        def wrapper(state):
-            execution_order.append(node_name)
-            return state
-
-        return wrapper
 
     # This test validates the graph structure, not full execution
     # In a real test, we'd mock each node and verify order

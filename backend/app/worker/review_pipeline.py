@@ -1,7 +1,6 @@
 """LangGraph pipeline for review processing."""
 
 import logging
-from typing import Any
 
 from app.worker.review_state import ReviewState
 
@@ -94,13 +93,27 @@ def run_pipeline_direct(state: ReviewState) -> ReviewState:
     )
 
     # Sequential execution (same order as LangGraph edges)
-    state = ingestion_node(state)
-    state = claim_extraction_node(state)
-    state = citation_suggestion_node(state)
-    state = checklist_generation_node(state)
-    state = quality_score_node(state)
-    state = badge_generation_node(state)
-    state = report_generation_node(state)
+    # Nodes return partial updates, so we merge them into the full state
+    updates = ingestion_node(state)
+    state.update(updates)
+
+    updates = claim_extraction_node(state)
+    state.update(updates)
+
+    updates = citation_suggestion_node(state)
+    state.update(updates)
+
+    updates = checklist_generation_node(state)
+    state.update(updates)
+
+    updates = quality_score_node(state)
+    state.update(updates)
+
+    updates = badge_generation_node(state)
+    state.update(updates)
+
+    updates = report_generation_node(state)
+    state.update(updates)
 
     return state
 

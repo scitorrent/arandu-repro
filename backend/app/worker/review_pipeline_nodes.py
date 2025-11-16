@@ -2,7 +2,6 @@
 
 import logging
 from pathlib import Path
-from typing import Any
 
 from app.config import settings
 from app.worker.badge_generator import compute_badge_status
@@ -14,7 +13,7 @@ from app.worker.quality.predictor import predict_quality_score
 from app.worker.quality.score_narrator import generate_narrative
 from app.worker.quality.shap_explainer import explain_with_shap, shap_to_json
 from app.worker.report_builder import build_review_data, generate_html_report, generate_json_report
-from app.worker.review_ingestion import PaperMeta, ingest_paper
+from app.worker.review_ingestion import ingest_paper
 from app.worker.review_state import ReviewState
 
 logger = logging.getLogger(__name__)

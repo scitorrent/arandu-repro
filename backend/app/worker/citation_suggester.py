@@ -6,10 +6,6 @@ from typing import Any
 
 from app.config import settings
 from app.worker.claim_extractor import Claim
-from app.worker.rag.bm25_index import get_index, search_bm25
-from app.worker.rag.embeddings import embed_text, search_dense
-from app.worker.rag.hybrid_search import hybrid_search
-from app.worker.rag.reranker import rerank
 
 logger = logging.getLogger(__name__)
 

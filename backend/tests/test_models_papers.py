@@ -61,7 +61,7 @@ def test_create_paper(db_session):
     )
     db_session.add(paper)
     db_session.commit()
-    
+
     assert paper.id is not None
     assert paper.aid == "test-001"
     assert paper.visibility == PaperVisibility.PRIVATE
@@ -77,7 +77,7 @@ def test_paper_visibility_enum(db_session):
     )
     db_session.add(paper)
     db_session.commit()
-    
+
     assert paper.visibility == PaperVisibility.UNLISTED
 
 
@@ -85,7 +85,7 @@ def test_paper_soft_delete(db_session, sample_paper):
     """Test paper soft delete."""
     sample_paper.deleted_at = datetime.now(UTC)
     db_session.commit()
-    
+
     assert sample_paper.deleted_at is not None
 
 
@@ -105,7 +105,7 @@ def test_paper_with_versions(db_session, sample_paper):
     )
     db_session.add_all([version1, version2])
     db_session.commit()
-    
+
     assert len(sample_paper.versions) == 2
     assert version1.version == 1
     assert version2.version == 2
@@ -127,7 +127,7 @@ def test_paper_with_external_ids(db_session, sample_paper):
     )
     db_session.add_all([ext_id1, ext_id2])
     db_session.commit()
-    
+
     assert len(sample_paper.external_ids) == 2
 
 
@@ -141,7 +141,7 @@ def test_unique_aid_version(db_session, sample_paper):
     )
     db_session.add(version1)
     db_session.commit()
-    
+
     # Try to create duplicate
     version2 = PaperVersion(
         id=uuid.uuid4(),
@@ -150,7 +150,7 @@ def test_unique_aid_version(db_session, sample_paper):
         pdf_path="/papers/test-paper-001/v1/file2.pdf",
     )
     db_session.add(version2)
-    
+
     with pytest.raises(Exception):  # IntegrityError or similar
         db_session.commit()
 
@@ -164,7 +164,7 @@ def test_version_positive_check(db_session, sample_paper):
         pdf_path="/papers/test-paper-001/v0/file.pdf",
     )
     db_session.add(version)
-    
+
     with pytest.raises(Exception):  # CheckConstraint violation
         db_session.commit()
 
@@ -181,7 +181,7 @@ def test_quality_score_paper_scope(db_session, sample_paper):
     )
     db_session.add(score)
     db_session.commit()
-    
+
     assert score.paper_id == sample_paper.id
     assert score.paper_version_id is None
     assert score.scope == QualityScoreScope.PAPER
@@ -199,7 +199,7 @@ def test_quality_score_version_scope(db_session, sample_paper, sample_paper_vers
     )
     db_session.add(score)
     db_session.commit()
-    
+
     assert score.paper_version_id == sample_paper_version.id
     assert score.paper_id is None
     assert score.scope == QualityScoreScope.VERSION
@@ -216,7 +216,7 @@ def test_quality_score_scope_validation(db_session, sample_paper):
         rationale={},
     )
     db_session.add(score)
-    
+
     with pytest.raises(Exception):  # CheckConstraint violation
         db_session.commit()
 
@@ -232,7 +232,7 @@ def test_create_claim(db_session, sample_paper_version):
     )
     db_session.add(claim)
     db_session.commit()
-    
+
     assert claim.paper_version_id == sample_paper_version.id
     assert claim.text == "This is a test claim"
 
@@ -250,7 +250,7 @@ def test_claim_span_consistency(db_session, sample_paper_version):
     )
     db_session.add(claim1)
     db_session.commit()
-    
+
     # Invalid: only one set
     claim2 = Claim(
         id=uuid.uuid4(),
@@ -261,7 +261,7 @@ def test_claim_span_consistency(db_session, sample_paper_version):
         hash="hash2",
     )
     db_session.add(claim2)
-    
+
     with pytest.raises(Exception):  # CheckConstraint violation
         db_session.commit()
 
@@ -276,7 +276,7 @@ def test_claim_hash_dedupe(db_session, sample_paper_version):
     )
     db_session.add(claim1)
     db_session.commit()
-    
+
     # Try to create duplicate hash
     claim2 = Claim(
         id=uuid.uuid4(),
@@ -285,7 +285,7 @@ def test_claim_hash_dedupe(db_session, sample_paper_version):
         hash="duplicate-hash",  # Same hash
     )
     db_session.add(claim2)
-    
+
     with pytest.raises(Exception):  # UniqueConstraint violation
         db_session.commit()
 
@@ -300,7 +300,7 @@ def test_create_claim_link(db_session, sample_paper_version, sample_paper):
     )
     db_session.add(claim)
     db_session.commit()
-    
+
     link = ClaimLink(
         id=uuid.uuid4(),
         claim_id=claim.id,
@@ -310,7 +310,7 @@ def test_create_claim_link(db_session, sample_paper_version, sample_paper):
     )
     db_session.add(link)
     db_session.commit()
-    
+
     assert link.claim_id == claim.id
     assert link.relation == ClaimRelation.EQUIVALENT
 
@@ -325,7 +325,7 @@ def test_claim_link_source_validation(db_session, sample_paper_version):
     )
     db_session.add(claim)
     db_session.commit()
-    
+
     # Invalid: no source
     link = ClaimLink(
         id=uuid.uuid4(),
@@ -335,7 +335,7 @@ def test_claim_link_source_validation(db_session, sample_paper_version):
         # Missing source_paper_id and source_doc_id
     )
     db_session.add(link)
-    
+
     with pytest.raises(Exception):  # CheckConstraint violation
         db_session.commit()
 
@@ -350,7 +350,7 @@ def test_claim_link_relation_enum(db_session, sample_paper_version):
     )
     db_session.add(claim)
     db_session.commit()
-    
+
     link = ClaimLink(
         id=uuid.uuid4(),
         claim_id=claim.id,
@@ -360,7 +360,7 @@ def test_claim_link_relation_enum(db_session, sample_paper_version):
     )
     db_session.add(link)
     db_session.commit()
-    
+
     assert link.relation == ClaimRelation.CONTRADICTORY
 
 
@@ -380,11 +380,11 @@ def test_cascade_delete_paper(db_session, sample_paper):
     )
     db_session.add_all([version, ext_id])
     db_session.commit()
-    
+
     # Delete paper
     db_session.delete(sample_paper)
     db_session.commit()
-    
+
     # Versions and external_ids should be deleted
     assert db_session.query(PaperVersion).filter_by(aid=sample_paper.aid).first() is None
     assert db_session.query(PaperExternalId).filter_by(paper_id=sample_paper.id).first() is None

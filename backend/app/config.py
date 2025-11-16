@@ -48,7 +48,7 @@ class Settings(BaseSettings):
     max_pdf_size_mb: int = 25
     review_timeout_seconds: int = 90
     pdf_parsing_timeout_seconds: int = 30
-    
+
     # Papers storage
     papers_base_path: Path = Path(tempfile.gettempdir()) / "arandu" / "papers"
     rag_enabled: bool = True

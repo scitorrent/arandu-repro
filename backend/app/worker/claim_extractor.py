@@ -5,7 +5,7 @@ import re
 from dataclasses import dataclass
 from typing import Any
 
-from app.worker.section_segmenter import get_section_text, segment_paper
+from app.worker.section_segmenter import segment_paper
 
 logger = logging.getLogger(__name__)
 

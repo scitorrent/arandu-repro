@@ -3,7 +3,6 @@
 import pytest
 import uuid
 import hashlib
-from datetime import UTC, datetime
 
 from app.models import (
     Paper,
@@ -26,7 +25,7 @@ def db_session():
     from sqlalchemy.orm import sessionmaker
     from sqlalchemy.pool import StaticPool
     from app.db.base import Base
-    
+
     engine = create_engine(
         "sqlite:///:memory:",
         connect_args={"check_same_thread": False},
@@ -82,7 +81,7 @@ def test_quality_score_scope_paper_rule(db_session, sample_paper):
     db_session.commit()
     assert score.paper_id == sample_paper.id
     assert score.paper_version_id is None
-    
+
     # Invalid: scope='paper' without paper_id
     score2 = QualityScore(
         id=uuid.uuid4(),
@@ -111,7 +110,7 @@ def test_quality_score_scope_version_rule(db_session, sample_version):
     db_session.commit()
     assert score.paper_version_id == sample_version.id
     assert score.paper_id is None
-    
+
     # Invalid: scope='version' without paper_version_id
     score2 = QualityScore(
         id=uuid.uuid4(),
@@ -128,7 +127,7 @@ def test_quality_score_scope_version_rule(db_session, sample_version):
 def test_claim_hash_dedupe(db_session, sample_version):
     """Test claim hash deduplication."""
     hash_value = hashlib.sha256(b"test-claim|0|10|test-version").hexdigest()
-    
+
     claim1 = Claim(
         id=uuid.uuid4(),
         paper_version_id=sample_version.id,
@@ -137,7 +136,7 @@ def test_claim_hash_dedupe(db_session, sample_version):
     )
     db_session.add(claim1)
     db_session.commit()
-    
+
     # Try to create duplicate hash
     claim2 = Claim(
         id=uuid.uuid4(),
@@ -146,7 +145,7 @@ def test_claim_hash_dedupe(db_session, sample_version):
         hash=hash_value,  # Same hash
     )
     db_session.add(claim2)
-    
+
     with pytest.raises(Exception):  # UniqueConstraint violation
         db_session.commit()
 
@@ -161,7 +160,7 @@ def test_unique_aid_version(db_session, sample_paper):
     )
     db_session.add(version1)
     db_session.commit()
-    
+
     # Try duplicate (aid, version)
     version2 = PaperVersion(
         id=uuid.uuid4(),
@@ -170,7 +169,7 @@ def test_unique_aid_version(db_session, sample_paper):
         pdf_path="/papers/test-001/v1/file2.pdf",
     )
     db_session.add(version2)
-    
+
     with pytest.raises(Exception):  # UniqueConstraint violation
         db_session.commit()
 
@@ -185,7 +184,7 @@ def test_unique_paper_external_id_kind(db_session, sample_paper):
     )
     db_session.add(ext_id1)
     db_session.commit()
-    
+
     # Try duplicate (paper_id, kind)
     ext_id2 = PaperExternalId(
         id=uuid.uuid4(),
@@ -194,7 +193,7 @@ def test_unique_paper_external_id_kind(db_session, sample_paper):
         value="9876.5432",
     )
     db_session.add(ext_id2)
-    
+
     with pytest.raises(Exception):  # UniqueConstraint violation
         db_session.commit()
 
@@ -209,7 +208,7 @@ def test_claim_link_source_validation(db_session, sample_version):
     )
     db_session.add(claim)
     db_session.commit()
-    
+
     # Valid: with source_paper_id
     link1 = ClaimLink(
         id=uuid.uuid4(),
@@ -220,7 +219,7 @@ def test_claim_link_source_validation(db_session, sample_version):
     )
     db_session.add(link1)
     db_session.commit()
-    
+
     # Invalid: no source
     link2 = ClaimLink(
         id=uuid.uuid4(),
@@ -230,7 +229,7 @@ def test_claim_link_source_validation(db_session, sample_version):
         # Missing source_paper_id and source_doc_id
     )
     db_session.add(link2)
-    
+
     with pytest.raises(Exception):  # CheckConstraint violation
         db_session.commit()
 

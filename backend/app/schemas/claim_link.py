@@ -1,7 +1,7 @@
 """Claim link schemas."""
 
 from datetime import datetime
-from typing import Literal, Optional
+from typing import Literal
 from uuid import UUID
 
 from pydantic import BaseModel, Field, field_validator
@@ -10,13 +10,13 @@ from pydantic import BaseModel, Field, field_validator
 class ClaimLinkBase(BaseModel):
     """Base claim link schema."""
 
-    source_paper_id: Optional[UUID] = None
-    source_doc_id: Optional[str] = Field(None, max_length=200)
-    source_citation: Optional[str] = Field(None, max_length=500)
+    source_paper_id: UUID | None = None
+    source_doc_id: str | None = Field(None, max_length=200)
+    source_citation: str | None = Field(None, max_length=500)
     relation: Literal["equivalent", "complementary", "contradictory", "unclear"]
     confidence: float = Field(..., ge=0.0, le=1.0)
-    context_excerpt: Optional[str] = Field(None, max_length=2000)
-    reasoning_ref: Optional[str] = Field(None, max_length=500)
+    context_excerpt: str | None = Field(None, max_length=2000)
+    reasoning_ref: str | None = Field(None, max_length=500)
 
     @field_validator("source_paper_id", "source_doc_id")
     @classmethod

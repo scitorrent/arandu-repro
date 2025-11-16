@@ -1,7 +1,6 @@
 """Integration tests for LangGraph pipeline with LLM (Gemini)."""
 
 import pytest
-from unittest.mock import patch
 
 from app.worker.review_pipeline import create_review_pipeline
 from app.worker.review_state import ReviewState

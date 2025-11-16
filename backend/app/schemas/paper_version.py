@@ -1,7 +1,7 @@
 """Paper version schemas."""
 
 from datetime import datetime
-from typing import Any, Dict, Optional
+from typing import Any
 from uuid import UUID
 
 from pydantic import BaseModel, Field
@@ -13,7 +13,7 @@ class PaperVersionBase(BaseModel):
     aid: str = Field(..., max_length=100)
     version: int = Field(..., ge=1)
     pdf_path: str = Field(..., max_length=1000)
-    meta_json: Optional[Dict[str, Any]] = None
+    meta_json: dict[str, Any] | None = None
 
 
 class PaperVersionCreate(PaperVersionBase):
@@ -27,7 +27,7 @@ class PaperVersion(PaperVersionBase):
 
     id: UUID
     created_at: datetime
-    deleted_at: Optional[datetime] = None
+    deleted_at: datetime | None = None
 
     class Config:
         """Pydantic config."""

@@ -1,7 +1,6 @@
 """Tests for container security hardening (Issue #31)."""
 
 from itertools import count
-from pathlib import Path
 from unittest.mock import Mock, patch
 
 import pytest

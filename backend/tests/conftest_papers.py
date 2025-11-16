@@ -6,14 +6,6 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
 from app.db.base import Base
-from app.models import (
-    Paper,
-    PaperVersion,
-    PaperExternalId,
-    QualityScore,
-    Claim,
-    ClaimLink,
-)
 
 
 @pytest.fixture(scope="function")

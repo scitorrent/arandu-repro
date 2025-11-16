@@ -1,8 +1,6 @@
 """Tests for checklist generator."""
 
-from pathlib import Path
 
-import pytest
 
 from app.worker.checklist_generator import (
     Checklist,

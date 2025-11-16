@@ -1,6 +1,5 @@
 """Tests for badge generator."""
 
-import pytest
 
 from app.worker.badge_generator import (
     compute_badge_status,

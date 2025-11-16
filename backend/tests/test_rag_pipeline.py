@@ -2,7 +2,7 @@
 
 import pytest
 
-from app.worker.rag.embeddings import cosine_similarity, embed_text, get_embedding_model
+from app.worker.rag.embeddings import cosine_similarity, embed_text
 
 
 @pytest.mark.skipif(

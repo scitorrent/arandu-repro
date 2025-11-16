@@ -74,7 +74,7 @@ def segment_paper(text: str) -> list[Section]:
 
             # Start new section
             current_section = matched_section
-            current_start = sum(len(l) + 1 for l in lines[:i])  # +1 for newline
+            current_start = sum(len(line_item) + 1 for line_item in lines[:i])  # +1 for newline
             current_lines = [line]
         else:
             current_lines.append(line)

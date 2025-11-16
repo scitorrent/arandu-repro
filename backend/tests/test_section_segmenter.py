@@ -1,8 +1,7 @@
 """Tests for section segmentation."""
 
-import pytest
 
-from app.worker.section_segmenter import Section, get_section_text, segment_paper
+from app.worker.section_segmenter import get_section_text, segment_paper
 
 
 def test_segment_paper_finds_sections():
