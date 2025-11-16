@@ -14,10 +14,10 @@ except ImportError:
 
 def validate_pdf_file(file_path: Path) -> tuple[bool, str | None]:
     """Validate PDF file.
-    
+
     Args:
         file_path: Path to PDF file
-    
+
     Returns:
         (is_valid, error_message)
     """
@@ -60,12 +60,12 @@ def validate_pdf_file(file_path: Path) -> tuple[bool, str | None]:
 
 def scan_pdf_basic(file_path: Path) -> tuple[bool, str | None]:
     """Basic PDF scan (lightweight).
-    
+
     Checks for:
     - Valid PDF structure
     - File size limits
     - Basic security flags (if available)
-    
+
     Returns:
         (is_safe, warning_message)
     """

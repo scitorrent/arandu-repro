@@ -163,7 +163,6 @@ def extract_repo_features(repo_path: Path | None = None) -> dict[str, Any]:
             break
 
     # Check for tests
-    test_dirs = ["tests", "test", "tests/"]
     test_files = list(repo_path.rglob("test_*.py"))
     if test_files:
         features["has_tests"] = True

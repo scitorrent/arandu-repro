@@ -41,7 +41,7 @@ def db_session():
 
 def test_smoke_e2e_full_flow(db_session):
     """Smoke test: full E2E flow.
-    
+
     Creates:
     1. Paper
     2. PaperVersion (v1)

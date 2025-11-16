@@ -37,7 +37,11 @@ class Review(Base):
     paper_meta = Column(JSON, nullable=True)  # {title, authors, venue, published_at}
 
     # State
-    status = Column(SQLEnum(ReviewStatus), nullable=False, default=ReviewStatus.PENDING)
+    status = Column(
+        SQLEnum(ReviewStatus, native_enum=False, values_callable=lambda x: [e.value for e in ReviewStatus]),
+        nullable=False,
+        default=ReviewStatus.PENDING
+    )
     error_message = Column(Text, nullable=True)
 
     # Processed data (stored as JSON for flexibility)

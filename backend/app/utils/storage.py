@@ -21,15 +21,15 @@ def validate_papers_base() -> Path:
 
 def get_paper_version_path(aid: str, version: int, filename: str = "file.pdf") -> Path:
     """Get path for paper version file.
-    
+
     Args:
         aid: Paper AID
         version: Version number
         filename: Filename (default: file.pdf)
-    
+
     Returns:
         Path object (relative to PAPERS_BASE)
-    
+
     Raises:
         ValueError: If path contains traversal attempts
     """
@@ -60,7 +60,7 @@ def get_paper_version_path(aid: str, version: int, filename: str = "file.pdf") -
 
 def ensure_paper_version_directory(aid: str, version: int) -> Path:
     """Ensure paper version directory exists.
-    
+
     Creates directory atomically and returns full path.
     """
     base = validate_papers_base()

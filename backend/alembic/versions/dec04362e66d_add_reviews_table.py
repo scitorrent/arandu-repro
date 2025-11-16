@@ -20,6 +20,7 @@ depends_on: Union[str, Sequence[str], None] = None
 
 def upgrade() -> None:
     # Create ENUM for review status (idempotent)
+    # Note: Use lowercase values to match ReviewStatus enum values (PENDING = "pending")
     op.execute("""
         DO $$ BEGIN
             CREATE TYPE reviewstatus AS ENUM ('pending', 'processing', 'completed', 'failed');
