@@ -23,7 +23,13 @@ interface Review {
   citations: Record<string, Array<{
     title: string
     authors: string[]
+    venue?: string | null
+    year?: number | null
+    doi?: string | null
+    url: string
     score_final: number
+    score_rerank: number
+    justification: string
   }>> | null
   checklist: {
     items: Array<{

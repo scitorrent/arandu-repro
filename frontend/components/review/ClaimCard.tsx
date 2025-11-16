@@ -11,7 +11,13 @@ interface ClaimCardProps {
   citations: Array<{
     title: string
     authors: string[]
+    venue?: string | null
+    year?: number | null
+    doi?: string | null
+    url: string
     score_final: number
+    score_rerank: number
+    justification: string
   }>
   reviewId: string
 }
@@ -96,7 +102,7 @@ export default function ClaimCard({ claim, citations, reviewId }: ClaimCardProps
             {citations.slice(0, 3).map((cit, i) => (
               <li key={i} className="text-sm">
                 <a
-                  href={cit.title}
+                  href={cit.url || (cit.doi ? `https://doi.org/${cit.doi}` : undefined)}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-secondary hover:underline"
