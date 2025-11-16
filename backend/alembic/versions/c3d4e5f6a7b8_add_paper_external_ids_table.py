@@ -19,9 +19,15 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    # Create ENUM for external ID kind
-    external_id_kind_enum = postgresql.ENUM('doi', 'arxiv', 'pmid', 'url', name='externalidkind')
-    external_id_kind_enum.create(op.get_bind(), checkfirst=True)
+    # Create ENUM for external ID kind (idempotent)
+    op.execute("""
+        DO $$ BEGIN
+            CREATE TYPE externalidkind AS ENUM ('doi', 'arxiv', 'pmid', 'url');
+        EXCEPTION
+            WHEN duplicate_object THEN null;
+        END $$;
+    """)
+    external_id_kind_enum = postgresql.ENUM('doi', 'arxiv', 'pmid', 'url', name='externalidkind', create_type=False)
     
     op.create_table(
         'paper_external_ids',

@@ -19,12 +19,18 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    # Create ENUM for claim relation
+    # Create ENUM for claim relation (idempotent)
+    op.execute("""
+        DO $$ BEGIN
+            CREATE TYPE claimrelation AS ENUM ('equivalent', 'complementary', 'contradictory', 'unclear');
+        EXCEPTION
+            WHEN duplicate_object THEN null;
+        END $$;
+    """)
     claim_relation_enum = postgresql.ENUM(
         'equivalent', 'complementary', 'contradictory', 'unclear',
-        name='claimrelation'
+        name='claimrelation', create_type=False
     )
-    claim_relation_enum.create(op.get_bind(), checkfirst=True)
     
     op.create_table(
         'claim_links',
