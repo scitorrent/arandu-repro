@@ -1,0 +1,119 @@
+"""LangGraph pipeline for review processing."""
+
+import logging
+
+from app.worker.review_state import ReviewState
+
+logger = logging.getLogger(__name__)
+
+# Try to import LangGraph, but allow graceful degradation
+try:
+    from langgraph.graph import END, StateGraph
+
+    LANGGRAPH_AVAILABLE = True
+except ImportError:
+    LANGGRAPH_AVAILABLE = False
+    logger.warning("LangGraph not available, pipeline will use direct function calls")
+
+
+def create_review_pipeline():
+    """
+    Create LangGraph pipeline for review processing.
+
+    Returns:
+        Compiled LangGraph graph or None if LangGraph not available
+    """
+    if not LANGGRAPH_AVAILABLE:
+        logger.warning("LangGraph not available, returning None")
+        return None
+
+    # Import node functions
+    from app.worker.review_pipeline_nodes import (
+        badge_generation_node,
+        checklist_generation_node,
+        claim_extraction_node,
+        citation_suggestion_node,
+        ingestion_node,
+        quality_score_node,
+        report_generation_node,
+    )
+
+    # Create graph
+    workflow = StateGraph(ReviewState)
+
+    # Add nodes (use different names than state keys to avoid conflicts)
+    workflow.add_node("ingestion", ingestion_node)
+    workflow.add_node("claim_extraction", claim_extraction_node)
+    workflow.add_node("citation_suggestion", citation_suggestion_node)
+    workflow.add_node("checklist_generation", checklist_generation_node)
+    workflow.add_node("quality_score_compute", quality_score_node)  # Renamed to avoid state key conflict
+    workflow.add_node("badge_generation", badge_generation_node)
+    workflow.add_node("report_generation", report_generation_node)
+
+    # Add edges (define execution flow)
+    workflow.set_entry_point("ingestion")
+    workflow.add_edge("ingestion", "claim_extraction")
+    # Both citation_suggestion and checklist_generation can run in parallel after claim_extraction
+    workflow.add_edge("claim_extraction", "citation_suggestion")
+    workflow.add_edge("claim_extraction", "checklist_generation")
+    # Quality score needs both citations and checklist
+    # LangGraph automatically waits for all incoming edges before executing quality_score_compute
+    # This ensures both citation_suggestion and checklist_generation complete before proceeding
+    workflow.add_edge("citation_suggestion", "quality_score_compute")
+    workflow.add_edge("checklist_generation", "quality_score_compute")
+    # Sequential: quality_score_compute → badge_generation → report_generation
+    workflow.add_edge("quality_score_compute", "badge_generation")
+    workflow.add_edge("badge_generation", "report_generation")
+    workflow.add_edge("report_generation", END)
+
+    # Compile graph
+    return workflow.compile()
+
+
+def run_pipeline_direct(state: ReviewState) -> ReviewState:
+    """
+    Run pipeline using direct function calls (fallback when LangGraph not available).
+
+    This maintains the same interface as LangGraph but uses sequential calls.
+
+    Args:
+        state: Initial review state
+
+    Returns:
+        Final review state
+    """
+    from app.worker.review_pipeline_nodes import (
+        badge_generation_node,
+        checklist_generation_node,
+        claim_extraction_node,
+        citation_suggestion_node,
+        ingestion_node,
+        quality_score_node,
+        report_generation_node,
+    )
+
+    # Sequential execution (same order as LangGraph edges)
+    # Nodes return partial updates, so we merge them into the full state
+    updates = ingestion_node(state)
+    state.update(updates)
+
+    updates = claim_extraction_node(state)
+    state.update(updates)
+
+    updates = citation_suggestion_node(state)
+    state.update(updates)
+
+    updates = checklist_generation_node(state)
+    state.update(updates)
+
+    updates = quality_score_node(state)
+    state.update(updates)
+
+    updates = badge_generation_node(state)
+    state.update(updates)
+
+    updates = report_generation_node(state)
+    state.update(updates)
+
+    return state
+

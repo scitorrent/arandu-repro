@@ -26,13 +26,23 @@ class TestE2EPipeline:
         """Set up in-memory SQLite database for testing."""
         engine = create_engine("sqlite:///:memory:", echo=False)
         Base.metadata.create_all(engine)
-        SessionLocal = sessionmaker(bind=engine)
-        db = SessionLocal()
+        session_local = sessionmaker(bind=engine)  # noqa: N806
+        db = session_local()
         # Store db in class for test methods
         TestE2EPipeline.db = db
-        # Patch SessionLocal to return our test db
+        # Patch SessionLocal in both locations to handle import caching
+        # 1. Patch the source module
         monkeypatch.setattr("app.db.session.SessionLocal", lambda: db)
+        # 2. Patch the worker module (where it's imported at module level)
+        monkeypatch.setattr("app.worker.main.SessionLocal", lambda: db)
+        # 3. Patch db.close() to be a no-op so process_job doesn't close our test session
+        original_close = db.close
+        def noop_close():
+            pass  # Don't close the session in tests
+        monkeypatch.setattr(db, "close", noop_close)
         yield
+        # Restore original close for cleanup
+        monkeypatch.setattr(db, "close", original_close)
         db.close()
 
     @pytest.fixture
@@ -82,7 +92,11 @@ class TestE2EPipeline:
         )
         TestE2EPipeline.db.add(job)
         TestE2EPipeline.db.commit()
+        TestE2EPipeline.db.flush()  # Ensure job is visible
         job_id = str(job.id)
+        
+        # Verify job exists before processing
+        assert TestE2EPipeline.db.query(Job).filter(Job.id == job.id).first() is not None
 
         # Process job
         try:
@@ -93,8 +107,11 @@ class TestE2EPipeline:
                 pytest.skip("Docker daemon not available")
             raise
 
-        # Refresh job from DB
-        TestE2EPipeline.db.refresh(job)
+        # Query for fresh job instance to see updates from process_job
+        # (The original job object may be detached after process_job runs)
+        job_id_uuid = job.id  # Save ID before job object becomes detached
+        job = TestE2EPipeline.db.query(Job).filter(Job.id == job_id_uuid).first()
+        assert job is not None, "Job not found after processing"
 
         # Assert job completed
         assert job.status == JobStatus.COMPLETED, f"Job failed: {job.error_message}"
@@ -138,7 +155,11 @@ class TestE2EPipeline:
         )
         TestE2EPipeline.db.add(job)
         TestE2EPipeline.db.commit()
+        TestE2EPipeline.db.flush()  # Ensure job is visible
         job_id = str(job.id)
+
+        # Verify job exists before processing
+        assert TestE2EPipeline.db.query(Job).filter(Job.id == job.id).first() is not None
 
         # Verify initial status
         assert job.status == JobStatus.PENDING
@@ -151,8 +172,10 @@ class TestE2EPipeline:
                 pytest.skip("Docker daemon not available")
             raise
 
-        # Refresh and verify final status
-        TestE2EPipeline.db.refresh(job)
+        # Query for fresh job instance to see updates from process_job
+        job_id_uuid = job.id  # Save ID before job object becomes detached
+        job = TestE2EPipeline.db.query(Job).filter(Job.id == job_id_uuid).first()
+        assert job is not None, "Job not found after processing"
         assert job.status == JobStatus.COMPLETED
 
         # Verify run has timestamps

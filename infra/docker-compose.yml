@@ -16,6 +16,8 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+    networks:
+      - arandu-network
 
   redis:
     image: redis:7-alpine
@@ -26,6 +28,8 @@ services:
       interval: 5s
       timeout: 3s
       retries: 5
+    networks:
+      - arandu-network
 
   api:
     build:
@@ -51,6 +55,8 @@ services:
       interval: 10s
       timeout: 5s
       retries: 3
+    networks:
+      - arandu-network
 
   worker:
     build:
@@ -75,6 +81,32 @@ services:
         condition: service_healthy
       api:
         condition: service_started
+    networks:
+      - arandu-network
+
+  web:
+    build:
+      context: ../frontend
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - NEXT_PUBLIC_API_BASE=http://localhost:8000
+    depends_on:
+      api:
+        condition: service_started
+    networks:
+      - arandu-network
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+networks:
+  arandu-network:
+    driver: bridge
 
 volumes:
   postgres_data:
