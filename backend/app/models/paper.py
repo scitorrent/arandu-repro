@@ -22,7 +22,10 @@ class Paper(Base):
     title = Column(String(500), nullable=True)
     repo_url = Column(String(1000), nullable=True)
     visibility = Column(
-        SQLEnum(PaperVisibility), default=PaperVisibility.PRIVATE, nullable=False, index=True
+        SQLEnum(PaperVisibility, native_enum=False, values_callable=lambda x: [e.value for e in PaperVisibility]),
+        default=PaperVisibility.PRIVATE,
+        nullable=False,
+        index=True
     )
     license = Column(String(200), nullable=True)
     created_by = Column(String(200), nullable=True)  # Stub até auth

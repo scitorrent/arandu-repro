@@ -19,9 +19,15 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    # Create ENUM for quality score scope
-    quality_score_scope_enum = postgresql.ENUM('paper', 'version', name='qualityscorescope')
-    quality_score_scope_enum.create(op.get_bind(), checkfirst=True)
+    # Create ENUM for quality score scope (idempotent)
+    op.execute("""
+        DO $$ BEGIN
+            CREATE TYPE qualityscorescope AS ENUM ('paper', 'version');
+        EXCEPTION
+            WHEN duplicate_object THEN null;
+        END $$;
+    """)
+    quality_score_scope_enum = postgresql.ENUM('paper', 'version', name='qualityscorescope', create_type=False)
     
     op.create_table(
         'quality_scores',
