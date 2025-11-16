@@ -107,11 +107,11 @@ def process_review(review_id: str) -> None:
                 logger.info(f"Using direct function calls for review {review_id}")
                 # Step 1: Ingestion (PDF/URL parsing, metadata extraction)
                 with log_step(review_id, "ingestion", review_id=review_id):
-                paper_meta = ingest_paper(
-                    url=review.url,
-                    doi=review.doi,
-                    pdf_path=review.pdf_file_path,
-                )
+                    paper_meta = ingest_paper(
+                        url=review.url,
+                        doi=review.doi,
+                        pdf_path=review.pdf_file_path,
+                    )
 
                 # Update review with metadata and text
                 review.paper_meta = {

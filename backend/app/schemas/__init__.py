@@ -2,12 +2,12 @@
 
 # Import existing schemas if they exist
 try:
-    from app.schemas.job import Job, JobCreate, JobUpdate
+    from app.schemas.job import Job  # noqa: F401
 except ImportError:
     pass
 
 try:
-    from app.schemas.review import Review, ReviewCreate, ReviewUpdate
+    from app.schemas.review import Review, ReviewCreate, ReviewUpdate  # noqa: F401
 except ImportError:
     pass
 from app.schemas.paper import (

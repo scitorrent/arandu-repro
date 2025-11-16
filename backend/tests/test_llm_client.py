@@ -1,14 +1,21 @@
 """Tests for LLM client (Gemini)."""
 
+import os
+
 import pytest
 from unittest.mock import patch, MagicMock
 
 from app.worker.llm_client import generate_text, get_llm_client
 
 
+def pytest_configure(config):
+    """Register custom markers."""
+    config.addinivalue_line("markers", "llm: marks tests as requiring LLM (deselect with '-m \"not llm\"')")
+
+
 @pytest.mark.skipif(
-    not pytest.config.getoption("--test-llm", default=False),
-    reason="LLM tests require --test-llm flag and GEMINI_API_KEY",
+    not os.getenv("GEMINI_API_KEY"),
+    reason="LLM tests require GEMINI_API_KEY environment variable",
 )
 def test_llm_client_available():
     """Test that LLM client can be initialized."""
