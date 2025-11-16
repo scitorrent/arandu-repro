@@ -171,7 +171,8 @@ def test_all_migrations_reversible(test_db_engine, alembic_cfg):
 
 def test_foreign_keys(test_db_engine, alembic_cfg):
     """Test that foreign keys are created correctly."""
-    alembic_cfg.set_main_option("sqlalchemy.url", "sqlite:///:memory:")
+    database_url = os.getenv("DATABASE_URL", "sqlite:///:memory:")
+    alembic_cfg.set_main_option("sqlalchemy.url", database_url)
 
     with test_db_engine.connect() as connection:
         alembic_cfg.attributes["connection"] = connection
