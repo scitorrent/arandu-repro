@@ -27,14 +27,14 @@
 
 ### Root Cause Identified
 
-**E2E Tests**: The issue is that `app.worker.main` imports `SessionLocal` at module level:
-```python
-from app.db.session import SessionLocal
-```
+**E2E Tests**: Two issues:
+1. **Import caching**: `app.worker.main` imports `SessionLocal` at module level, so patching only `app.db.session.SessionLocal` doesn't affect the cached reference.
+2. **Session closure**: `process_job` calls `db.close()` at the end (line 318), which closes the test's session since we patched `SessionLocal` to return the same `db` object. This detaches all objects in the test session.
 
-When we monkeypatch `app.db.session.SessionLocal`, the already-imported reference in `app.worker.main.SessionLocal` doesn't change due to Python's import caching.
-
-**Solution**: Patch `app.worker.main.SessionLocal` in addition to `app.db.session.SessionLocal`.
+**Solution**: 
+1. Patch `app.worker.main.SessionLocal` in addition to `app.db.session.SessionLocal`.
+2. Patch `db.close()` to be a no-op during tests so `process_job` doesn't close the test session.
+3. Save `job_id` before querying to avoid accessing detached objects.
 
 **Concurrency Tests**: Simple bug - `SessionLocal()` should be `session_local()` (2 occurrences).
 
@@ -43,6 +43,9 @@ When we monkeypatch `app.db.session.SessionLocal`, the already-imported referenc
 ### 1. E2E Test Fix
 **File**: `backend/tests/integration/test_e2e_pipeline.py`
 - Added patch for `app.worker.main.SessionLocal` to handle import caching
+- Patched `db.close()` to be a no-op so `process_job` doesn't close the test session
+- Save `job_id` before querying to avoid detached instance errors
+- **Result**: ✅ Both E2E tests now pass locally
 
 ### 2. Concurrency Test Fix
 **File**: `backend/tests/test_concurrency.py`
