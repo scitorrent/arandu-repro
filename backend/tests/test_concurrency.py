@@ -21,8 +21,8 @@ def db_session():
         poolclass=StaticPool,
     )
     Base.metadata.create_all(engine)
-    SessionLocal = sessionmaker(bind=engine)
-    session = SessionLocal()
+    session_local = sessionmaker(bind=engine)  # noqa: N806
+    session = session_local()
     yield session
     session.close()
     Base.metadata.drop_all(engine)
@@ -42,7 +42,7 @@ def test_concurrent_aid_version_creation(db_session):
         poolclass=StaticPool,
     )
     Base.metadata.create_all(engine)
-    SessionLocal = sessionmaker(bind=engine)
+    session_local = sessionmaker(bind=engine)  # noqa: N806
 
     # Create paper in shared database
     paper = Paper(
@@ -57,7 +57,7 @@ def test_concurrent_aid_version_creation(db_session):
 
     def create_version(version_num: int):
         """Create version in separate session using shared engine."""
-        session = SessionLocal()
+        session = session_local()
         try:
             version = PaperVersion(
                 id=uuid.uuid4(),
@@ -98,7 +98,7 @@ def test_concurrent_claim_hash_creation(db_session):
         poolclass=StaticPool,
     )
     Base.metadata.create_all(engine)
-    SessionLocal = sessionmaker(bind=engine)
+    session_local = sessionmaker(bind=engine)  # noqa: N806
 
     # Create paper and version in shared database
     paper = Paper(
@@ -123,7 +123,7 @@ def test_concurrent_claim_hash_creation(db_session):
 
     def create_claim(claim_id: uuid.UUID):
         """Create claim with same hash using shared engine."""
-        session = SessionLocal()
+        session = session_local()
         try:
             claim = Claim(
                 id=claim_id,

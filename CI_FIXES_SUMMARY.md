@@ -45,11 +45,32 @@
    - **Fix**: Renamed to `line_item` for clarity
    - **Files**: `backend/app/worker/section_segmenter.py`
 
+### 8. **Unused START import in review_pipeline.py**
+   - **Problem**: `START` was imported from `langgraph.graph` but never used
+   - **Fix**: Removed unused import
+   - **Files**: `backend/app/worker/review_pipeline.py`
+
+### 9. **Checklist seed pattern not matching '=' operator**
+   - **Problem**: Test `test_check_seeds_fixed_with_mention` failed because pattern didn't match "random_seed = 42"
+   - **Fix**: Updated seed patterns to include `=` in character class: `[:\s=]+`
+   - **Files**: `backend/app/worker/checklist_generator.py`
+
+### 10. **Concurrency tests using separate databases**
+   - **Problem**: Each thread created its own in-memory SQLite database, so no actual concurrency was tested
+   - **Fix**: Updated tests to use a shared database engine for all threads
+   - **Files**: `backend/tests/test_concurrency.py`
+
+### 11. **E2E test session visibility**
+   - **Problem**: Worker couldn't find jobs created in test database
+   - **Fix**: Added session flush and verification before processing
+   - **Files**: `backend/tests/integration/test_e2e_pipeline.py`
+
 ## Progress Update
 
 ### Latest CI Run Results (after fixes)
 - **PostgreSQL workflow**: 5 failed, 128 passed, 7 skipped (improved from 13 failed!)
-- **CI workflow**: Still failing on lint (8 errors remaining - N806 style issues)
+- **CI workflow**: Still failing on lint (1 error remaining - unused START import)
+- **Latest fixes**: Removed unused import, fixed seed pattern, fixed concurrency tests, improved E2E test setup
 
 ### Remaining Issues
 
@@ -83,6 +104,7 @@
 5. `fix: migration tests use PostgreSQL when available`
 6. `fix: remaining whitespace and database_url in test_foreign_keys`
 7. `fix: test_foreign_keys use DATABASE_URL`
+8. `fix: address CI test failures - unused import, seed pattern, concurrency, E2E tests`
 
 ## Next Steps
 

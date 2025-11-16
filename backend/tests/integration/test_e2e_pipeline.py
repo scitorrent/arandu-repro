@@ -26,8 +26,8 @@ class TestE2EPipeline:
         """Set up in-memory SQLite database for testing."""
         engine = create_engine("sqlite:///:memory:", echo=False)
         Base.metadata.create_all(engine)
-        SessionLocal = sessionmaker(bind=engine)
-        db = SessionLocal()
+        session_local = sessionmaker(bind=engine)  # noqa: N806
+        db = session_local()
         # Store db in class for test methods
         TestE2EPipeline.db = db
         # Patch SessionLocal to return our test db
@@ -144,7 +144,7 @@ class TestE2EPipeline:
         TestE2EPipeline.db.commit()
         TestE2EPipeline.db.flush()  # Ensure job is visible
         job_id = str(job.id)
-        
+
         # Verify job exists before processing
         assert TestE2EPipeline.db.query(Job).filter(Job.id == job.id).first() is not None
 
