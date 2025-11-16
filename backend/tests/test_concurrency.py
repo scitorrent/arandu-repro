@@ -50,7 +50,7 @@ def test_concurrent_aid_version_creation(db_session):
         aid="test-concurrent-001",
         visibility=PaperVisibility.PRIVATE,
     )
-    session = SessionLocal()
+    session = session_local()
     session.add(paper)
     session.commit()
     session.close()
@@ -70,7 +70,8 @@ def test_concurrent_aid_version_creation(db_session):
             return True, None
         except Exception as e:
             session.rollback()
-            return False, str(e)
+            # Return error message for debugging
+            return False, f"{type(e).__name__}: {str(e)}"
         finally:
             session.close()
 
@@ -112,7 +113,7 @@ def test_concurrent_claim_hash_creation(db_session):
         version=1,
         pdf_path="/papers/test-concurrent-002/v1/file.pdf",
     )
-    session = SessionLocal()
+    session = session_local()
     session.add(paper)
     session.add(version)
     session.commit()

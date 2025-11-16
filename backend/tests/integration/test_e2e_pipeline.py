@@ -30,8 +30,11 @@ class TestE2EPipeline:
         db = session_local()
         # Store db in class for test methods
         TestE2EPipeline.db = db
-        # Patch SessionLocal to return our test db
+        # Patch SessionLocal in both locations to handle import caching
+        # 1. Patch the source module
         monkeypatch.setattr("app.db.session.SessionLocal", lambda: db)
+        # 2. Patch the worker module (where it's imported at module level)
+        monkeypatch.setattr("app.worker.main.SessionLocal", lambda: db)
         yield
         db.close()
 
