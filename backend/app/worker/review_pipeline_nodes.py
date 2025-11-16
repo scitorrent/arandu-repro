@@ -272,17 +272,17 @@ def quality_score_node(state: ReviewState) -> ReviewState:
             ]
 
         # Build features
-        from app.worker.checklist_generator import Checklist
+        from app.worker.checklist_generator import Checklist, ChecklistItem
 
         checklist_items = state.get("checklist", {}).get("items", [])
         checklist_obj = Checklist(
             items=[
-                type("ChecklistItem", (), {
-                    "key": item.get("key"),
-                    "status": item.get("status"),
-                    "evidence": item.get("evidence"),
-                    "source": item.get("source"),
-                })()
+                ChecklistItem(
+                    key=item.get("key", ""),
+                    status=item.get("status", "missing"),
+                    evidence=item.get("evidence"),
+                    source=item.get("source", "paper"),
+                )
                 for item in checklist_items
             ],
             summary=state.get("checklist", {}).get("summary", ""),

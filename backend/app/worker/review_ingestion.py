@@ -289,10 +289,8 @@ def ingest_paper(
     # Clean text
     text = clean_text(text)
 
-    # Try to enhance metadata from Crossref if DOI available (sync version, no API call)
-    # For async version, use ingest_paper_async
-    # if doi and settings.crossref_enabled:
-    #     crossref_meta = await fetch_metadata_from_crossref(doi)  # Requires async context
+    # Note: For async Crossref metadata fetching, use ingest_paper_async
+    # This sync version does not fetch Crossref metadata to avoid blocking
 
     return PaperMeta(
         title=meta_dict.get("title"),

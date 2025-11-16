@@ -165,13 +165,15 @@ def process_review(review_id: str) -> None:
                         for c in review.claims
                     ]
 
+                    # Use review.paper_text and review.paper_meta which are set in both branches
+                    paper_meta_dict = review.paper_meta or {}
                     citations_by_claim = suggest_citations_for_claims(
                         claim_objects,
-                        paper_meta.text,
+                        review.paper_text,
                         paper_meta={
-                            "title": paper_meta.title,
-                            "authors": paper_meta.authors,
-                            "venue": paper_meta.venue,
+                            "title": paper_meta_dict.get("title"),
+                            "authors": paper_meta_dict.get("authors", []),
+                            "venue": paper_meta_dict.get("venue"),
                         },
                     )
 

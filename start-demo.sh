@@ -3,21 +3,21 @@
 
 set -e
 
-echo "🚀 Iniciando demo local do Arandu CoReview Studio..."
+echo "🚀 Starting local Arandu CoReview Studio demo..."
 echo ""
 
-# Verificar se Docker está rodando
+# Check if Docker is running
 if ! docker info > /dev/null 2>&1; then
-    echo "❌ Docker não está rodando. Por favor, inicie o Docker primeiro."
+    echo "❌ Docker is not running. Please start Docker first."
     exit 1
 fi
 
-# Navegar para infra
+# Navigate to infra
 cd "$(dirname "$0")/infra"
 
-echo "📦 Iniciando serviços com Docker Compose..."
+echo "📦 Starting services with Docker Compose..."
 echo ""
 
-# Iniciar serviços
+# Start services
 docker compose up --build
 
